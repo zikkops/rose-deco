@@ -101,9 +101,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-accent" />
             </button>
             <div className="flex items-center gap-3">
-              <span className="flex size-8 items-center justify-center rounded-full bg-accent-light font-serif text-sm text-accent-dark">RH</span>
+              <span className="flex size-8 items-center justify-center rounded-full bg-accent-light font-serif text-sm text-accent-dark">RD</span>
               <div className="hidden text-xs sm:block">
-                <p className="font-medium">Rozalie Haddad</p>
+                <p className="font-medium">Roze Déco</p>
                 <p className="text-stone">Administrator</p>
               </div>
             </div>

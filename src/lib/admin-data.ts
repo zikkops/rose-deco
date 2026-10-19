@@ -88,9 +88,9 @@ export const customers: Customer[] = [
 ];
 
 export const messages: Message[] = [
-  { id: "M-311", name: "Isabelle Grant", email: "isabelle.g@example.com", topic: "Showroom appointment", preview: "Hello, I'd love to book a private appointment this Saturday morning to see the Marlow sofa in bouclé…", date: "2026-10-14 09:12", unread: true },
+  { id: "M-311", name: "Isabelle Grant", email: "isabelle.g@example.com", topic: "Place an order", preview: "Hello, I'd love to order the Marlow sofa in bouclé — could you confirm the price and delivery time?", date: "2026-10-14 09:12", unread: true },
   { id: "M-310", name: "Daniel Okafor", email: "daniel.o@example.com", topic: "Product enquiry", preview: "Is the Ondine dining table available in a 260 cm length? We're hoping to seat ten.", date: "2026-10-13 18:40", unread: true },
-  { id: "M-309", name: "Atelier Noor", email: "studio@noor.example.com", topic: "Trade program", preview: "We're an interior design studio working on a boutique hotel project and would like to apply…", date: "2026-10-13 11:05", unread: true },
+  { id: "M-309", name: "Atelier Noor", email: "studio@noor.example.com", topic: "Collaboration", preview: "We're an interior design studio working on a boutique hotel project and would love to collaborate…", date: "2026-10-13 11:05", unread: true },
   { id: "M-308", name: "Rachel Kim", email: "rachel.k@example.com", topic: "Order & delivery", preview: "Could you confirm the delivery window for order RD-10474? I'll be travelling the week of the 20th.", date: "2026-10-12 15:22", unread: false },
   { id: "M-307", name: "Tom Hughes", email: "tom.h@example.com", topic: "Design consultation", preview: "We've just moved into a new apartment and need help furnishing the living and dining area…", date: "2026-10-11 10:47", unread: false },
 ];

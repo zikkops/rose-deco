@@ -15,7 +15,7 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader
-        title="Good morning, Rozalie"
+        title="Good morning"
         subtitle="Here's what's happening at Roze Déco today."
         actions={
           <Link href="/admin/products/new" className="flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm text-ivory hover:bg-accent-dark">

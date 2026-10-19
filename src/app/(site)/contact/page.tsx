@@ -1,35 +1,39 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { AtSign, Mail, MapPin, Phone } from "lucide-react";
 import { ContactForm } from "@/components/site/ContactForm";
+import { brand } from "@/lib/brand";
 import { lifestyle } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Contact Us",
-  description: "Visit the Roze Déco showroom, book a consultation or get in touch with our client care team.",
+  description: "Get in touch with Roze Déco by email, phone or on Instagram @roze.deco.",
 };
 
 const faqs = [
   {
-    q: "How does white-glove delivery work?",
-    a: "Our two-person team will contact you to arrange a delivery slot, carry the piece to the room of your choice, assemble it and take away all packaging. It's complimentary on orders over $2,500.",
+    q: "Where are your pieces made?",
+    a: "Every Roze Déco piece is thoughtfully designed and produced in Lebanon.",
   },
   {
-    q: "What is your returns policy?",
-    a: "In-stock items can be returned within 30 days in their original condition. Made-to-order and bespoke pieces are crafted especially for you and are non-returnable.",
+    q: "How can I place an order?",
+    a: `Message us by email, phone or on Instagram (${brand.instagram}) with the piece you're interested in and we'll take care of the rest.`,
   },
   {
-    q: "Can I order fabric and leather swatches?",
-    a: "Yes — up to six swatches are free of charge and usually arrive within three working days.",
+    q: "Do you deliver?",
+    a: "Yes — get in touch with your location and we'll share the delivery options and timing for your area.",
   },
   {
-    q: "Do you offer a trade program?",
-    a: "We work with architects, interior designers and hospitality groups worldwide. Trade members receive preferential pricing and a dedicated account manager.",
+    q: "Can I request a custom colour or finish?",
+    a: "Many of our pieces can be adapted. Send us a message with what you have in mind and we'll let you know what's possible.",
   },
-  {
-    q: "How should I care for my furniture?",
-    a: "Each piece ships with a care guide. In general, avoid direct sunlight, rotate cushions regularly, and use a dry cloth on oiled timber surfaces.",
-  },
+];
+
+const channels = [
+  { icon: Mail, label: "Email", value: brand.email, href: `mailto:${brand.email}` },
+  { icon: Phone, label: "Phone", value: brand.phone, href: brand.phoneHref },
+  { icon: AtSign, label: "Instagram", value: brand.instagram, href: brand.instagramUrl, external: true },
+  { icon: MapPin, label: "Based in", value: brand.origin },
 ];
 
 export default function ContactPage() {
@@ -41,8 +45,8 @@ export default function ContactPage() {
           We&apos;d love to hear from you
         </h1>
         <p className="mx-auto mt-6 max-w-xl leading-relaxed text-taupe">
-          Whether you have a question about a piece, need help planning a room
-          or want to book a private showroom appointment — our team is here.
+          Have a question about a piece or want to place an order? Send us a
+          message, give us a call or reach us on Instagram.
         </p>
       </section>
 
@@ -53,72 +57,51 @@ export default function ContactPage() {
 
         <aside className="space-y-10 lg:col-span-4 lg:col-start-9">
           <div className="relative aspect-[4/3] overflow-hidden">
-            <Image src={lifestyle.bright} alt="Roze Déco flagship showroom" fill sizes="(min-width: 1024px) 33vw, 100vw" className="object-cover" />
+            <Image src={lifestyle.bright} alt="An interior styled with Roze Déco pieces" fill sizes="(min-width: 1024px) 33vw, 100vw" className="object-cover" />
           </div>
-          <div className="space-y-6 text-sm">
-            <div className="flex gap-4">
-              <MapPin className="mt-0.5 size-5 shrink-0 text-accent" strokeWidth={1.2} />
-              <div>
-                <p className="font-serif text-xl">Flagship Showroom</p>
-                <p className="mt-1 leading-relaxed text-taupe">
-                  24 Rue du Faubourg<br />Design District, Beirut<br />Lebanon
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <Clock className="mt-0.5 size-5 shrink-0 text-accent" strokeWidth={1.2} />
-              <div className="text-taupe">
-                <p>Mon – Fri · 10:00 – 19:00</p>
-                <p>Saturday · 11:00 – 18:00</p>
-                <p>Sunday · By appointment</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <Phone className="mt-0.5 size-5 shrink-0 text-accent" strokeWidth={1.2} />
-              <p className="text-taupe">+961 1 234 567</p>
-            </div>
-            <div className="flex gap-4">
-              <Mail className="mt-0.5 size-5 shrink-0 text-accent" strokeWidth={1.2} />
-              <p className="text-taupe">hello@rozedeco.com</p>
-            </div>
-          </div>
-          <div className="border border-sand p-6">
-            <p className="eyebrow">For professionals</p>
-            <p className="mt-3 font-serif text-2xl">Trade & Hospitality</p>
-            <p className="mt-2 text-sm leading-relaxed text-taupe">
-              trade@rozedeco.com — preferential pricing, bespoke sizing and
-              project support for designers and architects.
-            </p>
-          </div>
+          <ul className="space-y-6 text-sm">
+            {channels.map(({ icon: Icon, label, value, href, external }) => (
+              <li key={label} className="flex gap-4">
+                <Icon className="mt-0.5 size-5 shrink-0 text-accent" strokeWidth={1.2} />
+                <div>
+                  <p className="text-[11px] tracking-[0.2em] text-stone uppercase">{label}</p>
+                  {href ? (
+                    <a
+                      href={href}
+                      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                      className="link-underline mt-1 inline-block font-serif text-xl"
+                    >
+                      {value}
+                    </a>
+                  ) : (
+                    <p className="mt-1 font-serif text-xl">{value}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
         </aside>
       </section>
 
-      {/* Map placeholder */}
-      <section className="relative h-[380px] overflow-hidden bg-linen">
-        <svg className="absolute inset-0 size-full text-sand" aria-hidden>
-          <defs>
-            <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
-              <path d="M48 0H0V48" fill="none" stroke="currentColor" strokeWidth="1" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-          <path d="M-20 260 C 300 180, 520 340, 900 220 S 1500 120, 2200 260" stroke="#e3e3e3" strokeWidth="26" fill="none" />
-          <path d="M600 -20 C 640 140, 560 260, 700 420" stroke="#e3e3e3" strokeWidth="18" fill="none" />
-        </svg>
-        <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-          <div className="bg-ink px-5 py-3 text-center text-ivory shadow-xl">
-            <p className="font-serif text-lg">Roze Déco</p>
-            <p className="text-[10px] tracking-[0.2em] text-ivory/70 uppercase">Flagship Showroom</p>
-          </div>
-          <MapPin className="mt-1 size-8 fill-accent text-accent" strokeWidth={1} />
+      {/* Instagram band */}
+      <section className="bg-ink py-16 text-center text-ivory lg:py-20">
+        <div className="container-lux">
+          <p className="eyebrow text-accent-light">Follow us</p>
+          <a
+            href={brand.instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block font-serif text-4xl font-light hover:opacity-80 lg:text-6xl"
+          >
+            {brand.instagram}
+          </a>
         </div>
-        <p className="absolute right-4 bottom-3 text-[10px] text-stone">Interactive map coming soon</p>
       </section>
 
       {/* FAQ */}
       <section id="faq" className="container-lux grid gap-12 py-20 lg:grid-cols-12 lg:py-28">
         <div className="lg:col-span-4">
-          <p className="eyebrow">Client care</p>
+          <p className="eyebrow">Good to know</p>
           <h2 className="mt-4 font-serif text-4xl font-light lg:text-5xl">Frequently asked</h2>
         </div>
         <div className="lg:col-span-7 lg:col-start-6">

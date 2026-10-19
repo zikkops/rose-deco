@@ -48,8 +48,7 @@ export function Header() {
   return (
     <>
       <div className="bg-ink py-2 text-center text-[11px] tracking-[0.2em] text-ivory/90 uppercase">
-        <span className="sm:hidden">Free white-glove delivery over $2,500</span>
-        <span className="hidden sm:inline">Complimentary white-glove delivery on orders over $2,500</span>
+        Designed &amp; produced in Lebanon
       </div>
       <header
         className={`sticky top-0 z-40 transition-colors duration-500 ${

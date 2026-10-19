@@ -34,7 +34,8 @@
 
 ## Next up (to discuss)
 - [ ] Replace placeholder photos with real product photography
-- [ ] Final brand content: copy, showroom address, team, phone/email
+- [x] Real brand info: About story (founded 2020, made in Lebanon), email, phone, Instagram (`src/lib/brand.ts`)
+- [ ] Delivery / returns policy, address or showroom (if any), real product catalogue & prices
 - [ ] Connect backend / CMS (products, orders, contact form) + admin authentication
 - [ ] Cart drawer, checkout & payments
 - [ ] Wishlist, search

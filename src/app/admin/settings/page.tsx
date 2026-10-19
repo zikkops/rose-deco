@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/admin/AdminShell";
+import { brand } from "@/lib/brand";
 
 export const metadata = { title: "Settings" };
 
@@ -42,16 +43,17 @@ export default function SettingsPage() {
       />
       <Section title="Store details" desc="Shown on invoices, emails and the contact page.">
         <Field label="Store name" value="Roze Déco" />
-        <Field label="Contact email" value="hello@rozedeco.com" type="email" />
-        <Field label="Phone" value="+961 1 234 567" />
+        <Field label="Contact email" value={brand.email} type="email" />
+        <Field label="Phone" value={brand.phone} />
         <Field label="Currency" value="USD ($)" />
-        <Field label="Showroom address" value="24 Rue du Faubourg, Design District, Beirut" full />
+        <Field label="Instagram" value={brand.instagram} />
+        <Field label="Country" value={brand.origin} />
       </Section>
       <Section title="Shipping" desc="Delivery thresholds and fees.">
         <Field label="Free white-glove delivery over" value="2500" type="number" />
         <Field label="Standard delivery fee" value="150" type="number" />
         <Toggle label="Offer international shipping" on />
-        <Toggle label="Allow showroom pickup" on />
+        <Toggle label="Allow pickup" />
       </Section>
       <Section title="Notifications" desc="Who gets notified when things happen.">
         <Toggle label="Email me on new orders" on />
@@ -61,9 +63,7 @@ export default function SettingsPage() {
       </Section>
       <Section title="Team" desc="People with access to the back office.">
         {[
-          ["Rozalie Haddad", "Owner"],
-          ["Léa Fontaine", "Editor"],
-          ["Client Care", "Support"],
+          ["Roze Déco", "Owner"],
         ].map(([n, r]) => (
           <div key={n} className="flex items-center justify-between rounded-md border border-sand/60 px-3 py-2.5 text-sm sm:col-span-2">
             <span>{n}</span>

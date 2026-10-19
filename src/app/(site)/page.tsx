@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Gem, Hammer, Leaf, Truck } from "lucide-react";
+import { ArrowRight, AtSign, Gem, MapPin, Sparkles } from "lucide-react";
 import { ProductCard } from "@/components/site/ProductCard";
+import { brand } from "@/lib/brand";
 import {
   categories,
   featuredProducts,
   lifestyle,
   newArrivals,
-  testimonials,
 } from "@/lib/data";
 
 export default function HomePage() {
@@ -20,7 +20,7 @@ export default function HomePage() {
       <section className="relative flex h-[92vh] min-h-[620px] items-end overflow-hidden">
         <Image
           src={lifestyle.hero}
-          alt="Warm living room styled with Roze Déco furniture"
+          alt="Living room styled with Roze Déco pieces"
           fill
           priority
           sizes="100vw"
@@ -36,8 +36,8 @@ export default function HomePage() {
             The art of <em className="font-normal">living</em> beautifully
           </h1>
           <p className="animate-fade-up mt-6 max-w-lg text-base leading-relaxed text-ivory/85 [animation-delay:240ms]">
-            Furniture handcrafted in small batches from the finest leathers,
-            linens and solid timbers — designed to be lived with for a lifetime.
+            Distinctive home accessories and occasional furniture, designed to
+            bring character and personality to everyday spaces.
           </p>
           <div className="animate-fade-up mt-10 flex flex-col gap-3 [animation-delay:360ms] sm:flex-row sm:gap-4">
             <Link href="/shop" className="btn-light">
@@ -57,10 +57,10 @@ export default function HomePage() {
       <section className="border-b border-sand/70">
         <div className="container-lux grid grid-cols-2 gap-6 py-8 lg:grid-cols-4">
           {[
-            { icon: Hammer, title: "Handcrafted", text: "Finished by artisans" },
-            { icon: Gem, title: "Finest materials", text: "Ethically sourced" },
-            { icon: Truck, title: "White-glove delivery", text: "Placed in your room" },
-            { icon: Leaf, title: "Built to last", text: "10-year frame warranty" },
+            { icon: MapPin, title: "Made in Lebanon", text: "Designed & produced locally" },
+            { icon: Sparkles, title: "Original designs", text: "Pieces with personality" },
+            { icon: Gem, title: "Accessible design", text: "Considered, within reach" },
+            { icon: AtSign, title: brand.instagram, text: "Follow our latest pieces" },
           ].map(({ icon: Icon, title, text }) => (
             <div key={title} className="flex items-center gap-4">
               <Icon className="size-6 shrink-0 text-accent" strokeWidth={1.2} />
@@ -143,7 +143,7 @@ export default function HomePage() {
           <div className="relative aspect-[4/5] overflow-hidden">
             <Image
               src={lifestyle.studio}
-              alt="Roze Déco atelier"
+              alt="Roze Déco interior"
               fill
               sizes="(min-width: 1024px) 50vw, 100vw"
               className="object-cover"
@@ -162,22 +162,21 @@ export default function HomePage() {
           </div>
         </div>
         <div>
-          <p className="eyebrow">Since 2008</p>
+          <p className="eyebrow">Since {brand.founded}</p>
           <h2 className="mt-4 font-serif text-4xl leading-tight font-light lg:text-6xl">
-            Made slowly, <em>by hand</em>, to be kept forever
+            Designed in <em>Lebanon</em>, made for everyday living
           </h2>
           <p className="mt-6 max-w-lg leading-relaxed text-taupe">
-            Every Roze Déco piece begins as a sketch in our atelier and is
-            brought to life by a small team of upholsterers, joiners and
-            finishers. We choose materials that age gracefully — full-grain
-            leathers, Belgian linens, solid oak and walnut — so your furniture
-            becomes more beautiful with every passing year.
+            Roze Déco is a Lebanese design brand rooted in a passion for
+            interiors and contemporary living. Exploring a variety of
+            materials, colours and forms, we create home accessories and
+            occasional furniture that bring character to everyday spaces.
           </p>
           <div className="mt-10 grid max-w-md grid-cols-3 gap-6 border-t border-sand pt-8">
             {[
-              ["18", "Years of craft"],
-              ["42", "Master artisans"],
-              ["12k", "Homes furnished"],
+              ["01", "Aesthetics"],
+              ["02", "Originality"],
+              ["03", "Accessibility"],
             ].map(([n, l]) => (
               <div key={l}>
                 <p className="font-serif text-4xl">{n}</p>
@@ -232,48 +231,50 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="bg-accent-light/50 py-20 lg:py-28">
+      {/* Instagram */}
+      <section className="bg-ink py-20 text-center text-ivory lg:py-24">
         <div className="container-lux">
-          <p className="eyebrow text-center">In their homes</p>
-          <div className="mt-12 grid gap-12 lg:grid-cols-3">
-            {testimonials.map((t) => (
-              <figure key={t.name} className="text-center">
-                <blockquote className="font-serif text-2xl leading-snug font-light italic">
-                  “{t.quote}”
-                </blockquote>
-                <figcaption className="mt-6 text-xs tracking-[0.2em] text-taupe uppercase">
-                  {t.name} — {t.location}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          <p className="eyebrow text-accent-light">Follow along</p>
+          <a
+            href={brand.instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block font-serif text-4xl font-light hover:opacity-80 lg:text-6xl"
+          >
+            {brand.instagram}
+          </a>
+          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-ivory/70">
+            New pieces and our latest designs, first on Instagram.
+          </p>
         </div>
       </section>
 
-      {/* Showroom CTA */}
+      {/* Contact CTA */}
       <section className="container-lux grid items-center gap-10 py-20 lg:grid-cols-2 lg:py-28">
         <div className="relative aspect-[16/10] overflow-hidden">
           <Image
             src={lifestyle.showroom}
-            alt="Roze Déco showroom"
+            alt="An interior styled with Roze Déco pieces"
             fill
             sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
           />
         </div>
         <div className="lg:pl-12">
-          <p className="eyebrow">Visit us</p>
+          <p className="eyebrow">Get in touch</p>
           <h2 className="mt-4 font-serif text-4xl font-light lg:text-5xl">
-            Experience the collection in person
+            Found a piece you love?
           </h2>
           <p className="mt-5 max-w-md leading-relaxed text-taupe">
-            Book a private appointment at our flagship showroom. Our design
-            consultants will help you choose fabrics, finishes and layouts
-            tailored to your home.
+            Message us to place an order, ask about a design or request a
+            custom colour or finish.
           </p>
+          <ul className="mt-6 space-y-1.5 text-sm text-taupe">
+            <li><a href={`mailto:${brand.email}`} className="link-underline">{brand.email}</a></li>
+            <li><a href={brand.phoneHref} className="link-underline">{brand.phone}</a></li>
+          </ul>
           <Link href="/contact" className="btn-dark mt-8">
-            Book an appointment
+            Contact us
           </Link>
         </div>
       </section>

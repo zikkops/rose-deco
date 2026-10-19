@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
 
-const topics = ["Product enquiry", "Showroom appointment", "Design consultation", "Order & delivery", "Trade program"];
+const topics = ["Product enquiry", "Place an order", "Custom request", "Order & delivery", "Collaboration"];
 
 // UI only — submission will be wired to the backend later.
 export function ContactForm() {
@@ -56,16 +56,8 @@ export function ContactForm() {
         <input required className="input-lux" placeholder="Last name *" />
         <input required type="email" className="input-lux" placeholder="Email address *" />
         <input className="input-lux" placeholder="Phone (optional)" />
-        {topic === "Showroom appointment" && (
-          <>
-            <input type="date" className="input-lux" aria-label="Preferred date" />
-            <select className="input-lux" defaultValue="" aria-label="Preferred time">
-              <option value="" disabled>Preferred time</option>
-              <option>Morning (10:00 – 13:00)</option>
-              <option>Afternoon (13:00 – 16:00)</option>
-              <option>Evening (16:00 – 19:00)</option>
-            </select>
-          </>
+        {(topic === "Place an order" || topic === "Custom request") && (
+          <input className="input-lux sm:col-span-2" placeholder="Which piece are you interested in?" />
         )}
         <textarea
           required
@@ -77,8 +69,8 @@ export function ContactForm() {
 
       <label className="mt-8 flex items-start gap-3 text-xs text-taupe">
         <input type="checkbox" className="mt-0.5 accent-ink" />
-        I&apos;d like to receive news, early access to new collections and
-        invitations to showroom events.
+        I&apos;d like to receive news about new pieces and collections from
+        Roze Déco.
       </label>
 
       <button type="submit" className="btn-dark mt-10">

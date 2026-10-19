@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s | Roze Déco",
   },
   description:
-    "Handcrafted luxury furniture and décor. Timeless pieces designed to be lived with.",
+    "Roze Déco is a Lebanese design brand creating distinctive home accessories and occasional furniture, designed and produced in Lebanon.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

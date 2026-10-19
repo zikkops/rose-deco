@@ -132,7 +132,7 @@ export const products: Product[] = [
     isBestseller: true,
     rating: 4.9,
     reviews: 128,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "aurelio-cognac-sofa",
@@ -153,7 +153,7 @@ export const products: Product[] = [
       "Semi-aniline leather",
       "Blackened steel base",
       "Removable seat cushions",
-      "Made in Italy",
+      "Made in Lebanon",
     ],
     dimensions: "W 240 × D 98 × H 74 cm",
     leadTime: "Made to order — 8 weeks",
@@ -161,7 +161,7 @@ export const products: Product[] = [
     isNew: true,
     rating: 4.8,
     reviews: 42,
-    designer: "Marco Bellini",
+    designer: "Roze Déco",
   }),
   p({
     slug: "esme-velvet-sofa",
@@ -192,7 +192,7 @@ export const products: Product[] = [
     isBestseller: true,
     rating: 4.9,
     reviews: 211,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "marlow-modular-sofa",
@@ -221,7 +221,7 @@ export const products: Product[] = [
     isNew: true,
     rating: 4.7,
     reviews: 36,
-    designer: "Léa Fontaine",
+    designer: "Roze Déco",
   }),
   p({
     slug: "sienna-lounge-sofa",
@@ -249,7 +249,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 58,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "celine-three-seater",
@@ -277,7 +277,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.5,
     reviews: 87,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
 
   // ——— Chairs
@@ -308,7 +308,7 @@ export const products: Product[] = [
     isNew: true,
     rating: 4.8,
     reviews: 64,
-    designer: "Léa Fontaine",
+    designer: "Roze Déco",
   }),
   p({
     slug: "lune-lounge-chair",
@@ -338,7 +338,7 @@ export const products: Product[] = [
     isBestseller: true,
     rating: 4.9,
     reviews: 152,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "arlo-dining-chair",
@@ -366,7 +366,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 93,
-    designer: "Marco Bellini",
+    designer: "Roze Déco",
   }),
   p({
     slug: "nori-shell-chair",
@@ -394,7 +394,7 @@ export const products: Product[] = [
     inStock: false,
     rating: 4.9,
     reviews: 27,
-    designer: "Kenji Aoki",
+    designer: "Roze Déco",
   }),
   p({
     slug: "cassian-leather-armchair",
@@ -422,7 +422,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.5,
     reviews: 48,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "bastien-bar-stool",
@@ -450,7 +450,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.4,
     reviews: 71,
-    designer: "Kenji Aoki",
+    designer: "Roze Déco",
   }),
 
   // ——— Tables
@@ -481,7 +481,7 @@ export const products: Product[] = [
     isBestseller: true,
     rating: 4.9,
     reviews: 102,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "halden-console",
@@ -506,7 +506,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 39,
-    designer: "Marco Bellini",
+    designer: "Roze Déco",
   }),
   p({
     slug: "pomme-bistro-table",
@@ -534,7 +534,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.5,
     reviews: 55,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "lior-side-table",
@@ -558,7 +558,7 @@ export const products: Product[] = [
     isNew: true,
     rating: 4.7,
     reviews: 22,
-    designer: "Léa Fontaine",
+    designer: "Roze Déco",
   }),
   p({
     slug: "ravel-round-table",
@@ -583,7 +583,7 @@ export const products: Product[] = [
     inStock: false,
     rating: 4.8,
     reviews: 31,
-    designer: "Kenji Aoki",
+    designer: "Roze Déco",
   }),
 
   // ——— Bedroom
@@ -614,7 +614,7 @@ export const products: Product[] = [
     isBestseller: true,
     rating: 4.9,
     reviews: 119,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "margaux-upholstered-bed",
@@ -639,7 +639,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.7,
     reviews: 46,
-    designer: "Marco Bellini",
+    designer: "Roze Déco",
   }),
   p({
     slug: "solenne-bed-frame",
@@ -667,7 +667,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 28,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "ariane-channel-bed",
@@ -693,7 +693,7 @@ export const products: Product[] = [
     isNew: true,
     rating: 5.0,
     reviews: 14,
-    designer: "Léa Fontaine",
+    designer: "Roze Déco",
   }),
   p({
     slug: "elio-nightstand",
@@ -721,7 +721,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 77,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
 
   // ——— Lighting
@@ -751,7 +751,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.5,
     reviews: 66,
-    designer: "Kenji Aoki",
+    designer: "Roze Déco",
   }),
   p({
     slug: "calla-pendant",
@@ -779,7 +779,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 84,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "ember-copper-pendant-trio",
@@ -808,7 +808,7 @@ export const products: Product[] = [
     isBestseller: true,
     rating: 4.9,
     reviews: 98,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "arc-reading-lamp",
@@ -834,7 +834,7 @@ export const products: Product[] = [
     isNew: true,
     rating: 4.7,
     reviews: 19,
-    designer: "Kenji Aoki",
+    designer: "Roze Déco",
   }),
   p({
     slug: "lumen-linear-pendant",
@@ -854,7 +854,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.4,
     reviews: 33,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
 
   // ——— Décor & Storage
@@ -882,7 +882,7 @@ export const products: Product[] = [
     isBestseller: true,
     rating: 4.8,
     reviews: 143,
-    designer: "Atelier Céramique",
+    designer: "Roze Déco",
   }),
   p({
     slug: "rivoli-sideboard",
@@ -912,7 +912,7 @@ export const products: Product[] = [
     isBestseller: true,
     rating: 4.8,
     reviews: 24,
-    designer: "Léa Fontaine",
+    designer: "Roze Déco",
   }),
   p({
     slug: "alba-wall-cabinet",
@@ -937,7 +937,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.5,
     reviews: 18,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "mira-sideboard",
@@ -963,7 +963,7 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 41,
-    designer: "Studio Roze",
+    designer: "Roze Déco",
   }),
   p({
     slug: "atelier-bookshelf",
@@ -988,7 +988,7 @@ export const products: Product[] = [
     inStock: false,
     rating: 4.7,
     reviews: 29,
-    designer: "Kenji Aoki",
+    designer: "Roze Déco",
   }),
 ];
 
@@ -1032,24 +1032,3 @@ export const formatPrice = (n: number) =>
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(n);
-
-export const testimonials = [
-  {
-    quote:
-      "The Esme sofa is the most beautiful thing in our home. Every guest asks about it — and it's as comfortable as it looks.",
-    name: "Charlotte M.",
-    location: "London",
-  },
-  {
-    quote:
-      "From the showroom consultation to white-glove delivery, the entire experience felt genuinely bespoke.",
-    name: "Omar K.",
-    location: "Dubai",
-  },
-  {
-    quote:
-      "You can feel the craftsmanship. Our Ondine table has hosted three years of Sunday lunches and looks better than ever.",
-    name: "Sofia R.",
-    location: "Milan",
-  },
-];
