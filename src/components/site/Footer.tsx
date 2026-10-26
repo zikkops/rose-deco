@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { categories } from "@/lib/data";
+import { categories } from "@/lib/catalog";
 import { Logo } from "@/components/Logo";
 import { brand } from "@/lib/brand";
 
@@ -31,11 +31,11 @@ export function Footer() {
 
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-3 lg:col-span-8">
           <div>
-            <p className="eyebrow mb-5 text-accent-light">Shop</p>
+            <p className="eyebrow mb-5 text-accent-light">Categories</p>
             <ul className="space-y-3 text-sm">
               {categories.map((c) => (
                 <li key={c.slug}>
-                  <Link href={`/shop/${c.slug}`} className="hover:text-ivory">
+                  <Link href={`/categories/${c.slug}`} className="hover:text-ivory">
                     {c.name}
                   </Link>
                 </li>

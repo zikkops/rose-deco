@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { brand } from "@/lib/brand";
-import { lifestyle } from "@/lib/data";
+import { lifestyle } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "About Us",
@@ -157,7 +157,7 @@ export default function AboutPage() {
             Let&apos;s create something beautiful together
           </h2>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
-            <Link href="/shop" className="btn-dark">Shop the collection</Link>
+            <Link href="/categories" className="btn-dark">Browse categories</Link>
             <Link href="/contact" className="btn-outline">Contact us</Link>
           </div>
         </div>

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
+import { addMessage } from "@/lib/store";
 
 const topics = ["Product enquiry", "Place an order", "Custom request", "Order & delivery", "Collaboration"];
 
-// UI only — submission will be wired to the backend later.
+// Demo: messages are saved in the browser and show up in Admin → Messages.
 export function ContactForm() {
   const [topic, setTopic] = useState(topics[0]);
   const [sent, setSent] = useState(false);
@@ -32,6 +33,16 @@ export function ContactForm() {
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        const v = (k: string) => String(f.get(k) ?? "").trim();
+        const piece = v("piece");
+        addMessage({
+          name: `${v("first")} ${v("last")}`.trim(),
+          email: v("email"),
+          phone: v("phone"),
+          topic,
+          message: piece ? `[${piece}] ${v("message")}` : v("message"),
+        });
         setSent(true);
       }}
     >
@@ -52,14 +63,15 @@ export function ContactForm() {
       </div>
 
       <div className="mt-10 grid gap-x-8 gap-y-6 sm:grid-cols-2">
-        <input required className="input-lux" placeholder="First name *" />
-        <input required className="input-lux" placeholder="Last name *" />
-        <input required type="email" className="input-lux" placeholder="Email address *" />
-        <input className="input-lux" placeholder="Phone (optional)" />
+        <input name="first" required className="input-lux" placeholder="First name *" />
+        <input name="last" required className="input-lux" placeholder="Last name *" />
+        <input name="email" required type="email" className="input-lux" placeholder="Email address *" />
+        <input name="phone" type="tel" className="input-lux" placeholder="Phone (optional)" />
         {(topic === "Place an order" || topic === "Custom request") && (
-          <input className="input-lux sm:col-span-2" placeholder="Which piece are you interested in?" />
+          <input name="piece" className="input-lux sm:col-span-2" placeholder="Which piece are you interested in?" />
         )}
         <textarea
+          name="message"
           required
           rows={5}
           className="input-lux resize-none sm:col-span-2"

@@ -3,7 +3,7 @@ import Image from "next/image";
 import { AtSign, Mail, MapPin, Phone } from "lucide-react";
 import { ContactForm } from "@/components/site/ContactForm";
 import { brand } from "@/lib/brand";
-import { lifestyle } from "@/lib/data";
+import { lifestyle } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "Contact Us",

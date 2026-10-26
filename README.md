@@ -1,37 +1,42 @@
-# Roze Deco
+# Roze Déco
 
-Front-end for the Roze Deco luxury furniture & décor store — Next.js 16 (App Router), TypeScript, Tailwind CSS v4.
-
-> All data is dummy data and the admin is UI-only. Nothing is persisted yet.
+Website for Roze Déco — a Lebanese design brand of home accessories and occasional furniture.
+Next.js 16 (App Router), TypeScript, Tailwind CSS v4.
 
 ## Run
 
 ```bash
 npm install
-npm run dev     # http://localhost:3000
-npm run build   # production build
+npm run dev     # http://localhost:3000  (admin: /admin)
+npm run build
 ```
 
 ## Pages
 
-| Storefront | Admin |
+| Storefront | Admin (demo) |
 |---|---|
 | `/` Home | `/admin` Dashboard |
-| `/about` About Us | `/admin/products` + `/admin/products/[slug]`, `/admin/products/new` |
-| `/shop` All products | `/admin/orders` + `/admin/orders/[id]` |
-| `/shop/[category]` Category with filters | `/admin/customers` |
-| `/product/[slug]` Product detail | `/admin/messages` |
-| `/contact` Contact | `/admin/settings` |
+| `/about` About Us | `/admin/products` — list, quick stock edit, show/hide |
+| `/categories` All categories + all products | `/admin/products/edit` — add (no id) / edit (`?id=`) |
+| `/categories/[slug]` Category with filters | `/admin/orders` |
+| `/product/[slug]` Product | `/admin/messages` |
+| `/contact` Contact Us | `/admin/settings` — export / reset demo data |
+| `/checkout` Checkout (cash on delivery) | |
+
+## Stock rule
+
+Each product colour has a quantity. Quantity > 0 → **Ready now**. Quantity 0 → **Out of stock**, but still orderable with a warning that it needs about 2 weeks to be ready for shipment (`MADE_TO_ORDER_LEAD` in `src/lib/catalog.ts`).
+
+## Demo backend
+
+The admin is fully working but **saves to the browser's localStorage** (`src/lib/store.ts`), so changes are visible only in the same browser. Uploaded images are resized and stored as data URLs (`src/lib/image.ts`).
+
+To go live, replace the functions in `store.ts` with API calls to a real backend (same data shapes) and move image uploads to proper storage. Use *Settings → Export data* to carry over anything the client entered.
 
 ## Where things live
 
-- `src/lib/data.ts` — categories, products, image helpers (swap for CMS/DB queries)
-- `src/lib/admin-data.ts` — dummy orders, customers, messages, stats
-- `src/app/(site)/` — storefront routes (shared header/footer layout)
-- `src/app/admin/` — back-office routes
+- `src/lib/brand.ts` — contact details & brand story
+- `src/lib/catalog.ts` — categories, product model, seed products, stock helpers
+- `src/lib/store.ts` — demo data layer (products, cart, orders, messages)
+- `src/app/(site)/` — storefront · `src/app/admin/` — admin
 - `src/components/site/`, `src/components/admin/` — UI components
-- `src/app/globals.css` — brand tokens (colours, fonts) and shared utilities
-
-Placeholder images are loaded from Unsplash (allowed in `next.config.ts`).
-
-See `TASKS.md` for progress and next steps.

@@ -4,32 +4,31 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  Bell,
   ExternalLink,
   LayoutDashboard,
   Mail,
   Menu,
   Package,
-  Search,
   Settings,
   ShoppingCart,
-  Users,
   X,
 } from "lucide-react";
-import { messages } from "@/lib/admin-data";
+import { useMessages, useOrders } from "@/lib/store";
 import { Logo } from "@/components/Logo";
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/messages", label: "Messages", icon: Mail, badge: messages.filter((m) => m.unread).length },
+  { href: "/admin/orders", label: "Orders", icon: ShoppingCart, badge: "orders" as const },
+  { href: "/admin/messages", label: "Messages", icon: Mail, badge: "messages" as const },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const unread = useMessages().filter((m) => !m.read).length;
+  const newOrders = useOrders().filter((o) => o.status === "New").length;
+  const badges = { orders: newOrders, messages: unread };
   const [open, setOpen] = useState(false);
   const isActive = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
@@ -57,16 +56,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           >
             <Icon className="size-4" strokeWidth={1.6} />
             {label}
-            {badge ? (
-              <span className="ml-auto rounded-full bg-white px-1.5 text-[10px] leading-4 text-ink">{badge}</span>
+            {badge && badges[badge] ? (
+              <span className="ml-auto rounded-full bg-white px-1.5 text-[10px] leading-4 text-ink">{badges[badge]}</span>
             ) : null}
           </Link>
         ))}
       </nav>
       <div className="m-3 rounded-lg border border-ivory/10 p-4 text-xs">
-        <p className="text-ivory">Preview mode</p>
+        <p className="text-ivory">Demo mode</p>
         <p className="mt-1 leading-relaxed text-ivory/50">
-          Dummy data — not connected to a backend yet. Changes won&apos;t be saved.
+          Changes are saved in this browser only and show on the site right away. A real backend comes after approval.
         </p>
       </div>
       <Link href="/" className="flex items-center gap-2 border-t border-ivory/10 px-6 py-4 text-xs hover:text-ivory">
@@ -91,15 +90,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <Link href="/admin" aria-label="Roze Déco admin" className="lg:hidden">
             <Logo height={30} />
           </Link>
-          <div className="relative hidden max-w-sm flex-1 sm:block">
-            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone" />
-            <input className="input-admin pl-9" placeholder="Search orders, products, customers…" />
-          </div>
+          <span className="hidden rounded-full bg-warning/15 px-2.5 py-1 text-[11px] font-medium text-warning sm:inline">
+            Demo — saved in this browser
+          </span>
           <div className="ml-auto flex items-center gap-4">
-            <button className="relative text-taupe hover:text-ink" aria-label="Notifications">
-              <Bell className="size-5" strokeWidth={1.6} />
-              <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-accent" />
-            </button>
             <div className="flex items-center gap-3">
               <span className="flex size-8 items-center justify-center rounded-full bg-accent-light font-serif text-sm text-accent-dark">RD</span>
               <div className="hidden text-xs sm:block">

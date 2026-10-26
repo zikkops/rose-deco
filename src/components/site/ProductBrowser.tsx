@@ -1,57 +1,45 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, LayoutGrid, Grid3x3, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Grid3x3, LayoutGrid, SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "./ProductCard";
-import { categories, type Product } from "@/lib/data";
+import { categories, isReadyNow } from "@/lib/catalog";
+import { useActiveProducts } from "@/lib/store";
 
-type Sort = "featured" | "newest" | "price-asc" | "price-desc" | "rating";
+type Sort = "featured" | "newest" | "price-asc" | "price-desc";
 
 const sortLabels: Record<Sort, string> = {
   featured: "Featured",
   newest: "Newest",
   "price-asc": "Price: low to high",
   "price-desc": "Price: high to low",
-  rating: "Top rated",
 };
 
 const priceBands = [
-  { id: "u1000", label: "Under $1,000", min: 0, max: 999 },
-  { id: "1-3k", label: "$1,000 – $3,000", min: 1000, max: 3000 },
-  { id: "3-6k", label: "$3,000 – $6,000", min: 3001, max: 6000 },
-  { id: "6k", label: "Over $6,000", min: 6001, max: Infinity },
+  { id: "u50", label: "Under $50", min: 0, max: 49 },
+  { id: "50-150", label: "$50 – $150", min: 50, max: 150 },
+  { id: "150-300", label: "$150 – $300", min: 151, max: 300 },
+  { id: "300", label: "Over $300", min: 301, max: Infinity },
 ];
+
+type Availability = "all" | "ready" | "out";
 
 type Filters = {
   categories: string[];
   prices: string[];
   materials: string[];
   colors: string[];
-  availability: "all" | "in-stock" | "made-to-order";
-  onlyNew: boolean;
-  onlySale: boolean;
+  availability: Availability;
 };
 
-const empty: Filters = {
-  categories: [],
-  prices: [],
-  materials: [],
-  colors: [],
-  availability: "all",
-  onlyNew: false,
-  onlySale: false,
-};
+const empty: Filters = { categories: [], prices: [], materials: [], colors: [], availability: "all" };
 
-const toggle = (list: string[], v: string) =>
-  list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-export function ProductBrowser({
-  products,
-  showCategoryFilter = false,
-}: {
-  products: Product[];
-  showCategoryFilter?: boolean;
-}) {
+export function ProductBrowser({ category }: { category?: string }) {
+  const all = useActiveProducts();
+  const products = useMemo(() => (category ? all.filter((p) => p.category === category) : all), [all, category]);
+
   const [filters, setFilters] = useState<Filters>(empty);
   const [sort, setSort] = useState<Sort>("featured");
   const [cols, setCols] = useState<3 | 4>(3);
@@ -61,41 +49,28 @@ export function ProductBrowser({
     document.body.style.overflow = drawer ? "hidden" : "";
   }, [drawer]);
 
-  const materials = useMemo(
-    () => [...new Set(products.map((p) => p.material))].sort(),
-    [products],
-  );
+  const materials = useMemo(() => [...new Set(products.map((p) => p.material).filter(Boolean))].sort(), [products]);
   const colors = useMemo(() => {
     const m = new Map<string, string>();
-    products.forEach((p) => m.set(p.color, p.colorHex));
+    products.forEach((p) => p.colors.forEach((c) => m.set(c.name, c.hex)));
     return [...m.entries()];
   }, [products]);
 
   const results = useMemo(() => {
     const list = products.filter((p) => {
       if (filters.categories.length && !filters.categories.includes(p.category)) return false;
-      if (
-        filters.prices.length &&
-        !priceBands.some(
-          (b) => filters.prices.includes(b.id) && p.price >= b.min && p.price <= b.max,
-        )
-      )
-        return false;
+      if (filters.prices.length && !priceBands.some((b) => filters.prices.includes(b.id) && p.price >= b.min && p.price <= b.max)) return false;
       if (filters.materials.length && !filters.materials.includes(p.material)) return false;
-      if (filters.colors.length && !filters.colors.includes(p.color)) return false;
-      if (filters.availability === "in-stock" && !p.inStock) return false;
-      if (filters.availability === "made-to-order" && p.inStock) return false;
-      if (filters.onlyNew && !p.isNew) return false;
-      if (filters.onlySale && !p.compareAt) return false;
+      if (filters.colors.length && !p.colors.some((c) => filters.colors.includes(c.name))) return false;
+      if (filters.availability === "ready" && !isReadyNow(p)) return false;
+      if (filters.availability === "out" && isReadyNow(p)) return false;
       return true;
     });
     const sorted = [...list];
     if (sort === "price-asc") sorted.sort((a, b) => a.price - b.price);
     if (sort === "price-desc") sorted.sort((a, b) => b.price - a.price);
-    if (sort === "rating") sorted.sort((a, b) => b.rating - a.rating);
-    if (sort === "newest") sorted.sort((a, b) => Number(!!b.isNew) - Number(!!a.isNew));
-    if (sort === "featured")
-      sorted.sort((a, b) => Number(!!b.isBestseller) - Number(!!a.isBestseller));
+    if (sort === "newest") sorted.sort((a, b) => Number(b.isNew) - Number(a.isNew) || b.createdAt - a.createdAt);
+    if (sort === "featured") sorted.sort((a, b) => Number(b.featured) - Number(a.featured));
     return sorted;
   }, [products, filters, sort]);
 
@@ -108,31 +83,19 @@ export function ProductBrowser({
       label: priceBands.find((b) => b.id === id)!.label,
       clear: () => setFilters((f) => ({ ...f, prices: toggle(f.prices, id) })),
     })),
-    ...filters.materials.map((m) => ({
-      label: m,
-      clear: () => setFilters((f) => ({ ...f, materials: toggle(f.materials, m) })),
-    })),
-    ...filters.colors.map((c) => ({
-      label: c,
-      clear: () => setFilters((f) => ({ ...f, colors: toggle(f.colors, c) })),
-    })),
+    ...filters.materials.map((m) => ({ label: m, clear: () => setFilters((f) => ({ ...f, materials: toggle(f.materials, m) })) })),
+    ...filters.colors.map((c) => ({ label: c, clear: () => setFilters((f) => ({ ...f, colors: toggle(f.colors, c) })) })),
     ...(filters.availability !== "all"
       ? [{
-          label: filters.availability === "in-stock" ? "In stock" : "Made to order",
+          label: filters.availability === "ready" ? "Ready now" : "Out of stock",
           clear: () => setFilters((f) => ({ ...f, availability: "all" as const })),
         }]
-      : []),
-    ...(filters.onlyNew
-      ? [{ label: "New", clear: () => setFilters((f) => ({ ...f, onlyNew: false })) }]
-      : []),
-    ...(filters.onlySale
-      ? [{ label: "On sale", clear: () => setFilters((f) => ({ ...f, onlySale: false })) }]
       : []),
   ];
 
   const panel = (
     <div className="space-y-1">
-      {showCategoryFilter && (
+      {!category && (
         <FilterGroup title="Category">
           {categories.map((c) => (
             <Check
@@ -140,13 +103,37 @@ export function ProductBrowser({
               label={c.name}
               count={products.filter((p) => p.category === c.slug).length}
               checked={filters.categories.includes(c.slug)}
-              onChange={() =>
-                setFilters((f) => ({ ...f, categories: toggle(f.categories, c.slug) }))
-              }
+              onChange={() => setFilters((f) => ({ ...f, categories: toggle(f.categories, c.slug) }))}
             />
           ))}
         </FilterGroup>
       )}
+      <FilterGroup title="Availability">
+        {(
+          [
+            ["all", "All pieces", products.length],
+            ["ready", "Ready now", products.filter(isReadyNow).length],
+            ["out", "Out of stock", products.filter((p) => !isReadyNow(p)).length],
+          ] as const
+        ).map(([v, l, n]) => (
+          <label key={v} className="flex cursor-pointer items-center justify-between py-1.5 text-sm">
+            <span className="flex items-center gap-3">
+              <input
+                type="radio"
+                name={`availability-${category ?? "all"}`}
+                checked={filters.availability === v}
+                onChange={() => setFilters((f) => ({ ...f, availability: v }))}
+                className="size-3.5 accent-ink"
+              />
+              {l}
+            </span>
+            <span className="text-xs text-stone">{n}</span>
+          </label>
+        ))}
+        <p className="mt-2 text-[11px] leading-relaxed text-stone">
+          Out-of-stock pieces can still be ordered — they&apos;re ready to ship in about 2 weeks.
+        </p>
+      </FilterGroup>
       <FilterGroup title="Price">
         {priceBands.map((b) => (
           <Check
@@ -158,71 +145,41 @@ export function ProductBrowser({
           />
         ))}
       </FilterGroup>
-      <FilterGroup title="Material">
-        {materials.map((m) => (
-          <Check
-            key={m}
-            label={m}
-            count={products.filter((p) => p.material === m).length}
-            checked={filters.materials.includes(m)}
-            onChange={() => setFilters((f) => ({ ...f, materials: toggle(f.materials, m) }))}
-          />
-        ))}
-      </FilterGroup>
-      <FilterGroup title="Colour">
-        <div className="flex flex-wrap gap-2.5 pt-1">
-          {colors.map(([name, hex]) => {
-            const active = filters.colors.includes(name);
-            return (
-              <button
-                key={name}
-                title={name}
-                aria-label={name}
-                aria-pressed={active}
-                onClick={() => setFilters((f) => ({ ...f, colors: toggle(f.colors, name) }))}
-                className={`size-7 rounded-full border transition ${
-                  active
-                    ? "ring-1 ring-ink ring-offset-2 ring-offset-ivory"
-                    : "border-ink/15 hover:scale-110"
-                }`}
-                style={{ backgroundColor: hex }}
-              />
-            );
-          })}
-        </div>
-      </FilterGroup>
-      <FilterGroup title="Availability">
-        {(
-          [
-            ["all", "All pieces"],
-            ["in-stock", "In stock"],
-            ["made-to-order", "Made to order"],
-          ] as const
-        ).map(([v, l]) => (
-          <label key={v} className="flex cursor-pointer items-center gap-3 py-1.5 text-sm">
-            <input
-              type="radio"
-              name="availability"
-              checked={filters.availability === v}
-              onChange={() => setFilters((f) => ({ ...f, availability: v }))}
-              className="size-3.5 accent-ink"
+      {colors.length > 0 && (
+        <FilterGroup title="Colour">
+          <div className="flex flex-wrap gap-2.5 pt-1">
+            {colors.map(([name, hex]) => {
+              const active = filters.colors.includes(name);
+              return (
+                <button
+                  key={name}
+                  title={name}
+                  aria-label={name}
+                  aria-pressed={active}
+                  onClick={() => setFilters((f) => ({ ...f, colors: toggle(f.colors, name) }))}
+                  className={`size-7 rounded-full border transition ${
+                    active ? "ring-1 ring-ink ring-offset-2 ring-offset-ivory" : "border-ink/15 hover:scale-110"
+                  }`}
+                  style={{ backgroundColor: hex }}
+                />
+              );
+            })}
+          </div>
+        </FilterGroup>
+      )}
+      {materials.length > 1 && (
+        <FilterGroup title="Material">
+          {materials.map((m) => (
+            <Check
+              key={m}
+              label={m}
+              count={products.filter((p) => p.material === m).length}
+              checked={filters.materials.includes(m)}
+              onChange={() => setFilters((f) => ({ ...f, materials: toggle(f.materials, m) }))}
             />
-            {l}
-          </label>
-        ))}
-      </FilterGroup>
-      <FilterGroup title="Highlights">
-        <Check
-          label="New arrivals"
-          checked={filters.onlyNew}
-          onChange={() => setFilters((f) => ({ ...f, onlyNew: !f.onlyNew }))}
-        />
-        <Check
-          label="On sale"
-          checked={filters.onlySale}
-          onChange={() => setFilters((f) => ({ ...f, onlySale: !f.onlySale }))}
-        />
-      </FilterGroup>
+          ))}
+        </FilterGroup>
+      )}
     </div>
   );
 
@@ -251,26 +208,16 @@ export function ProductBrowser({
               className="cursor-pointer appearance-none bg-transparent pr-5 tracking-[0.15em] uppercase outline-none"
             >
               {Object.entries(sortLabels).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
+                <option key={v} value={v}>{l}</option>
               ))}
             </select>
             <ChevronDown className="pointer-events-none absolute right-0 size-3.5" />
           </label>
           <div className="hidden items-center gap-2 border-l border-sand pl-5 lg:flex">
-            <button
-              aria-label="3 columns"
-              onClick={() => setCols(3)}
-              className={cols === 3 ? "text-ink" : "text-stone"}
-            >
+            <button aria-label="3 columns" onClick={() => setCols(3)} className={cols === 3 ? "text-ink" : "text-stone"}>
               <LayoutGrid className="size-4" strokeWidth={1.5} />
             </button>
-            <button
-              aria-label="4 columns"
-              onClick={() => setCols(4)}
-              className={cols === 4 ? "text-ink" : "text-stone"}
-            >
+            <button aria-label="4 columns" onClick={() => setCols(4)} className={cols === 4 ? "text-ink" : "text-stone"}>
               <Grid3x3 className="size-4" strokeWidth={1.5} />
             </button>
           </div>
@@ -279,9 +226,7 @@ export function ProductBrowser({
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[240px_1fr] lg:gap-14">
         <aside className="hidden lg:block">
-          <div className="sticky top-[150px] max-h-[calc(100vh-170px)] overflow-y-auto pr-2">
-            {panel}
-          </div>
+          <div className="sticky top-[150px] max-h-[calc(100vh-170px)] overflow-y-auto pr-2">{panel}</div>
         </aside>
 
         <div>
@@ -297,10 +242,7 @@ export function ProductBrowser({
                   <X className="size-3" />
                 </button>
               ))}
-              <button
-                onClick={() => setFilters(empty)}
-                className="ml-2 text-xs text-accent underline underline-offset-4"
-              >
+              <button onClick={() => setFilters(empty)} className="ml-2 text-xs underline underline-offset-4">
                 Clear all
               </button>
             </div>
@@ -309,21 +251,13 @@ export function ProductBrowser({
           {results.length === 0 ? (
             <div className="flex flex-col items-center py-24 text-center">
               <p className="font-serif text-3xl">No pieces match your selection</p>
-              <p className="mt-3 text-sm text-taupe">
-                Try removing a filter or two to see more of the collection.
-              </p>
-              <button onClick={() => setFilters(empty)} className="btn-outline mt-8">
-                Reset filters
-              </button>
+              <p className="mt-3 text-sm text-taupe">Try removing a filter or two to see more.</p>
+              <button onClick={() => setFilters(empty)} className="btn-outline mt-8">Reset filters</button>
             </div>
           ) : (
-            <div
-              className={`grid grid-cols-2 gap-x-4 gap-y-12 lg:gap-x-6 ${
-                cols === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"
-              }`}
-            >
+            <div className={`grid grid-cols-2 gap-x-4 gap-y-12 lg:gap-x-6 ${cols === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
               {results.map((p) => (
-                <ProductCard key={p.slug} product={p} />
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
           )}
@@ -349,12 +283,8 @@ export function ProductBrowser({
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-4">{panel}</div>
           <div className="grid grid-cols-2 gap-3 border-t border-sand p-4">
-            <button onClick={() => setFilters(empty)} className="btn-outline px-4">
-              Clear
-            </button>
-            <button onClick={() => setDrawer(false)} className="btn-dark px-4">
-              Show {results.length}
-            </button>
+            <button onClick={() => setFilters(empty)} className="btn-outline px-4">Clear</button>
+            <button onClick={() => setDrawer(false)} className="btn-dark px-4">Show {results.length}</button>
           </div>
         </div>
       </div>
@@ -366,45 +296,23 @@ function FilterGroup({ title, children }: { title: string; children: React.React
   const [open, setOpen] = useState(true);
   return (
     <div className="border-b border-sand/70 py-4">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between text-xs tracking-[0.2em] uppercase"
-      >
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between text-xs tracking-[0.2em] uppercase">
         {title}
-        <ChevronDown
-          className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`}
-          strokeWidth={1.5}
-        />
+        <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={1.5} />
       </button>
       {open && <div className="mt-3">{children}</div>}
     </div>
   );
 }
 
-function Check({
-  label,
-  count,
-  checked,
-  onChange,
-}: {
-  label: string;
-  count?: number;
-  checked: boolean;
-  onChange: () => void;
-}) {
+function Check({ label, count, checked, onChange }: { label: string; count?: number; checked: boolean; onChange: () => void }) {
   return (
     <label className="flex cursor-pointer items-center justify-between py-1.5 text-sm">
       <span className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={onChange}
-          className="size-3.5 accent-ink"
-        />
+        <input type="checkbox" checked={checked} onChange={onChange} className="size-3.5 accent-ink" />
         {label}
       </span>
       {count !== undefined && <span className="text-xs text-stone">{count}</span>}
     </label>
   );
 }
-

@@ -1,19 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, AtSign, Gem, MapPin, Sparkles } from "lucide-react";
-import { ProductCard } from "@/components/site/ProductCard";
+import { ProductRail } from "@/components/site/ProductRail";
 import { brand } from "@/lib/brand";
-import {
-  categories,
-  featuredProducts,
-  lifestyle,
-  newArrivals,
-} from "@/lib/data";
+import { categories, lifestyle } from "@/lib/catalog";
 
 export default function HomePage() {
-  const featured = featuredProducts();
-  const arrivals = newArrivals().slice(0, 4);
-
   return (
     <>
       {/* Hero */}
@@ -40,7 +32,7 @@ export default function HomePage() {
             bring character and personality to everyday spaces.
           </p>
           <div className="animate-fade-up mt-10 flex flex-col gap-3 [animation-delay:360ms] sm:flex-row sm:gap-4">
-            <Link href="/shop" className="btn-light">
+            <Link href="/categories" className="btn-light">
               Explore the collection
             </Link>
             <Link
@@ -77,27 +69,27 @@ export default function HomePage() {
       <section className="container-lux py-20 lg:py-28">
         <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
           <div>
-            <p className="eyebrow">Shop by room</p>
+            <p className="eyebrow">Shop by category</p>
             <h2 className="mt-3 font-serif text-4xl font-light lg:text-5xl">
-              Curated for every space
+              Something for every space
             </h2>
           </div>
-          <Link href="/shop" className="link-underline text-xs tracking-[0.2em] uppercase">
+          <Link href="/categories" className="link-underline text-xs tracking-[0.2em] uppercase">
             View all categories
           </Link>
         </div>
-        <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
-          {categories.map((c) => (
+        <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
+          {categories.map((c, i) => (
             <Link
               key={c.slug}
-              href={`/shop/${c.slug}`}
-              className="group relative aspect-[4/5] overflow-hidden bg-linen lg:aspect-[5/4]"
+              href={`/categories/${c.slug}`}
+              className={`group relative overflow-hidden bg-linen ${i === 0 ? "col-span-2 aspect-[2/1]" : "aspect-square"}`}
             >
               <Image
                 src={c.image}
                 alt={c.name}
                 fill
-                sizes="(min-width: 1024px) 33vw, 50vw"
+                sizes={i === 0 ? "(min-width: 1024px) 50vw, 100vw" : "(min-width: 1024px) 25vw, 50vw"}
                 className="object-cover transition-transform duration-[1.2s] group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent" />
@@ -124,13 +116,11 @@ export default function HomePage() {
               Signature pieces
             </h2>
           </div>
-          <div className="mt-14 grid grid-cols-2 gap-x-4 gap-y-12 lg:grid-cols-4 lg:gap-x-6">
-            {featured.map((p) => (
-              <ProductCard key={p.slug} product={p} />
-            ))}
+          <div className="mt-14">
+            <ProductRail kind="featured" limit={8} />
           </div>
           <div className="mt-14 text-center">
-            <Link href="/shop" className="btn-outline">
+            <Link href="/categories" className="btn-outline">
               Shop all pieces
             </Link>
           </div>
@@ -193,20 +183,24 @@ export default function HomePage() {
       {/* Full-bleed banner */}
       <section className="relative flex min-h-[560px] items-center overflow-hidden">
         <Image
-          src={lifestyle.dining}
-          alt="Dining room"
+          src={lifestyle.games}
+          alt="Backgammon set on a table"
           fill
           sizes="100vw"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-ink/45" />
+        <div className="absolute inset-0 bg-ink/55" />
         <div className="container-lux relative text-center text-ivory">
-          <p className="eyebrow text-accent-light">The Dining Edit</p>
+          <p className="eyebrow text-accent-light">Ready now</p>
           <h2 className="mx-auto mt-4 max-w-3xl font-serif text-4xl font-light lg:text-6xl">
-            Tables made for long, unhurried evenings
+            Look for the Ready now tag
           </h2>
-          <Link href="/shop/tables" className="btn-light mt-10">
-            Shop dining
+          <p className="mx-auto mt-5 max-w-lg text-sm leading-relaxed text-ivory/80">
+            Ready now pieces ship right away. Out-of-stock pieces can still be
+            ordered — they&apos;ll be ready for shipment in about 2 weeks.
+          </p>
+          <Link href="/categories" className="btn-light mt-10">
+            Browse categories
           </Link>
         </div>
       </section>
@@ -220,14 +214,12 @@ export default function HomePage() {
               New arrivals
             </h2>
           </div>
-          <Link href="/shop" className="link-underline text-xs tracking-[0.2em] uppercase">
-            See everything new
+          <Link href="/categories" className="link-underline text-xs tracking-[0.2em] uppercase">
+            See all pieces
           </Link>
         </div>
-        <div className="mt-12 grid grid-cols-2 gap-x-4 gap-y-12 lg:grid-cols-4 lg:gap-x-6">
-          {arrivals.map((p) => (
-            <ProductCard key={p.slug} product={p} />
-          ))}
+        <div className="mt-12">
+          <ProductRail kind="new" />
         </div>
       </section>
 

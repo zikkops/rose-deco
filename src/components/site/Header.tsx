@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
-import { categories } from "@/lib/data";
+import { Menu, ShoppingBag, X } from "lucide-react";
+import { categories } from "@/lib/catalog";
+import { setCartOpen, useCartDetails } from "@/lib/store";
 import { Logo } from "@/components/Logo";
+import { CartDrawer } from "./CartDrawer";
 
 const nav = [
-  { href: "/shop", label: "Shop" },
-  { href: "/shop/sofas", label: "Sofas" },
-  { href: "/shop/bedroom", label: "Bedroom" },
-  { href: "/shop/lighting", label: "Lighting" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About Us" },
+  { href: "/categories", label: "Categories" },
+  { href: "/contact", label: "Contact Us" },
 ];
 
 export function Header() {
@@ -22,6 +22,7 @@ export function Header() {
   const [megaOpen, setMegaOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const overHero = pathname === "/" && !scrolled;
+  const { count } = useCartDetails();
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -42,8 +43,7 @@ export function Header() {
     setMegaOpen(false);
   }
 
-  const isActive = (href: string) =>
-    href === "/shop" ? pathname === "/shop" : pathname.startsWith(href);
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
     <>
@@ -76,7 +76,7 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                onMouseEnter={() => setMegaOpen(item.href === "/shop")}
+                onMouseEnter={() => setMegaOpen(item.href === "/categories")}
                 className={`link-underline text-xs tracking-[0.2em] uppercase ${
                   isActive(item.href) ? "after:scale-x-100" : ""
                 }`}
@@ -86,21 +86,14 @@ export function Header() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-4 sm:gap-5">
-            <button aria-label="Search" className="hidden sm:block">
-              <Search className="size-[18px]" strokeWidth={1.5} />
-            </button>
-            <Link href="/admin" aria-label="Account" className="hidden sm:block">
-              <User className="size-[18px]" strokeWidth={1.5} />
-            </Link>
-            <button aria-label="Wishlist" className="hidden sm:block">
-              <Heart className="size-[18px]" strokeWidth={1.5} />
-            </button>
-            <button aria-label="Bag" className="relative">
-              <ShoppingBag className="size-[18px]" strokeWidth={1.5} />
-              <span className="absolute -top-1.5 -right-2 flex size-4 items-center justify-center rounded-full bg-accent text-[9px] text-white">
-                2
-              </span>
+          <div className="flex w-6 items-center justify-end lg:w-auto">
+            <button aria-label={`Bag, ${count} items`} className="relative" onClick={() => setCartOpen(true)}>
+              <ShoppingBag className="size-5" strokeWidth={1.5} />
+              {count > 0 && (
+                <span className={`absolute -top-1.5 -right-2 flex size-4 items-center justify-center rounded-full text-[9px] ${overHero ? "bg-ivory text-ink" : "bg-ink text-ivory"}`}>
+                  {count}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -113,9 +106,9 @@ export function Header() {
               : "invisible -translate-y-2 opacity-0"
           }`}
         >
-          <div className="container-lux grid grid-cols-6 gap-6 py-8">
+          <div className="container-lux grid grid-cols-7 gap-5 py-8">
             {categories.map((c) => (
-              <Link key={c.slug} href={`/shop/${c.slug}`} className="group">
+              <Link key={c.slug} href={`/categories/${c.slug}`} className="group">
                 <div className="aspect-[4/5] overflow-hidden bg-linen">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -152,9 +145,6 @@ export function Header() {
             </button>
           </div>
           <nav className="mt-10 flex flex-col gap-1">
-            <Link href="/" className="py-3 font-serif text-2xl">
-              Home
-            </Link>
             {nav.map((item) => (
               <Link
                 key={item.href}
@@ -170,7 +160,7 @@ export function Header() {
             {categories.map((c) => (
               <Link
                 key={c.slug}
-                href={`/shop/${c.slug}`}
+                href={`/categories/${c.slug}`}
                 className="block py-1.5 text-sm text-taupe"
               >
                 {c.name}
@@ -179,6 +169,8 @@ export function Header() {
           </div>
         </div>
       </div>
+
+      <CartDrawer />
     </>
   );
 }
