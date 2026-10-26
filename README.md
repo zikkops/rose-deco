@@ -29,6 +29,9 @@ Each product colour has a quantity. Quantity > 0 → **Ready now**. Quantity 0 �
 
 ## Demo backend
 
+Admin login: **/admin/login** — username `demo`, password `roze2026` (shown under the login form). This is a browser-only check for the demo, not real security.
+
+
 The admin is fully working but **saves to the browser's localStorage** (`src/lib/store.ts`), so changes are visible only in the same browser. Uploaded images are resized and stored as data URLs (`src/lib/image.ts`).
 
 To go live, replace the functions in `store.ts` with API calls to a real backend (same data shapes) and move image uploads to proper storage. Use *Settings → Export data* to carry over anything the client entered.

@@ -358,3 +358,18 @@ export const useHydrated = () =>
     () => true,
     () => false,
   );
+
+// ——— Demo admin login (browser-only check — replace with real auth with the backend)
+
+export const DEMO_LOGIN = { username: "demo", password: "roze2026" };
+
+const sessionStore = createStore<string | null>("rd:v1:session", null);
+export const useSession = () => sessionStore.use();
+
+export const login = (username: string, password: string) => {
+  if (username.trim().toLowerCase() !== DEMO_LOGIN.username || password !== DEMO_LOGIN.password) return false;
+  sessionStore.write(DEMO_LOGIN.username);
+  return true;
+};
+
+export const logout = () => sessionStore.reset();

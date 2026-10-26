@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   ExternalLink,
   LayoutDashboard,
+  LogOut,
   Mail,
   Menu,
   Package,
@@ -13,7 +14,7 @@ import {
   ShoppingCart,
   X,
 } from "lucide-react";
-import { useMessages, useOrders } from "@/lib/store";
+import { logout, useHydrated, useMessages, useOrders, useSession } from "@/lib/store";
 import { Logo } from "@/components/Logo";
 
 const links = [
@@ -32,6 +33,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const isActive = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+
+  // Demo login gate
+  const router = useRouter();
+  const hydrated = useHydrated();
+  const session = useSession();
+  const isLogin = pathname === "/admin/login";
+  useEffect(() => {
+    if (hydrated && !session && !isLogin) router.replace(`/admin/login?next=${encodeURIComponent(pathname)}`);
+  }, [hydrated, session, isLogin, pathname, router]);
+
+  if (isLogin) return <>{children}</>;
+  if (!hydrated || !session) return <div className="min-h-screen bg-[#fafafa]" aria-busy="true" />;
 
   const sidebar = (
     <div className="flex h-full flex-col bg-ink text-ivory/70">
@@ -98,9 +111,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <span className="flex size-8 items-center justify-center rounded-full bg-accent-light font-serif text-sm text-accent-dark">RD</span>
               <div className="hidden text-xs sm:block">
                 <p className="font-medium">Roze Déco</p>
-                <p className="text-stone">Administrator</p>
+                <p className="text-stone">Demo account</p>
               </div>
             </div>
+            <button
+              onClick={() => {
+                logout();
+                router.replace("/admin/login");
+              }}
+              className="flex items-center gap-1.5 rounded-md border border-sand px-3 py-1.5 text-xs text-taupe hover:border-ink hover:text-ink"
+            >
+              <LogOut className="size-3.5" /> <span className="hidden sm:inline">Log out</span>
+            </button>
           </div>
         </header>
         <main className="min-w-0 flex-1 p-4 sm:p-8">{children}</main>

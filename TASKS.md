@@ -11,6 +11,7 @@
 - [x] Bag (cart drawer) + checkout (cash on delivery) → order appears in admin, stock is reserved
 - [x] Contact form → message appears in admin
 - [x] Demo admin (`/admin`): dashboard, products (add / edit / delete, images, colours, quantities, show/hide, featured, new), orders (status, details), messages, settings (export / reset)
+- [x] Demo admin login (`demo` / `roze2026`, shown on the login page)
 - [x] Demo data layer in the browser (`src/lib/store.ts`, localStorage)
 
 ## Before going live (after client approval)
