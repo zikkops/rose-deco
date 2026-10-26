@@ -4,9 +4,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   images: {
-    // Placeholder photography until real product shots are uploaded
+    // Demo photography (Unsplash) + product uploads (Cloudinary)
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/photo-*" },
+      { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
     ],
   },
   turbopack: {

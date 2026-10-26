@@ -1,87 +1,27 @@
 "use client";
 
-// DEMO DATA LAYER — everything is saved in this browser's localStorage.
-// When the client approves, swap these functions for real API calls
-// (same shapes), and move image uploads to proper storage.
+// DATA LAYER — Firestore (products, orders, messages) + Firebase Auth (admin).
+// The shopping bag stays in each visitor's browser (localStorage).
 
 import { useMemo, useSyncExternalStore } from "react";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from "firebase/auth";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  runTransaction,
+  setDoc,
+  updateDoc,
+  writeBatch,
+} from "firebase/firestore";
+import { auth, db, isAdminEmail } from "./firebase";
 import { seedProducts, type Product } from "./catalog";
 
-// ——— Generic localStorage-backed store
-
 type Listener = () => void;
-
-export class StorageFullError extends Error {
-  constructor() {
-    super("Browser storage is full. Remove some images or use smaller ones.");
-  }
-}
-
-function createStore<T>(key: string, seed: T) {
-  let cache: { raw: string | null; value: T } | null = null;
-  const listeners = new Set<Listener>();
-
-  const read = (): T => {
-    let raw: string | null = null;
-    try {
-      raw = localStorage.getItem(key);
-    } catch {
-      // storage unavailable (private mode etc.) — fall back to seed
-    }
-    if (cache && cache.raw === raw) return cache.value;
-    let value = seed;
-    if (raw) {
-      try {
-        value = JSON.parse(raw) as T;
-      } catch {
-        value = seed;
-      }
-    }
-    cache = { raw, value };
-    return value;
-  };
-
-  const emit = () => listeners.forEach((l) => l());
-
-  const write = (next: T) => {
-    const raw = JSON.stringify(next);
-    try {
-      localStorage.setItem(key, raw);
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "QuotaExceededError") throw new StorageFullError();
-      throw e;
-    }
-    cache = { raw, value: next };
-    emit();
-  };
-
-  const subscribe = (l: Listener) => {
-    listeners.add(l);
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === key || e.key === null) l();
-    };
-    window.addEventListener("storage", onStorage);
-    return () => {
-      listeners.delete(l);
-      window.removeEventListener("storage", onStorage);
-    };
-  };
-
-  return {
-    read,
-    write,
-    update: (fn: (v: T) => T) => write(fn(read())),
-    reset: () => {
-      try {
-        localStorage.removeItem(key);
-      } catch {}
-      cache = null;
-      emit();
-    },
-    // Server render + hydration use the seed; the client then switches to saved data.
-    use: () => useSyncExternalStore(subscribe, read, () => seed),
-  };
-}
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -92,6 +32,7 @@ export const orderStatuses: OrderStatus[] = ["New", "Confirmed", "Preparing", "S
 
 export type OrderItem = {
   productId: string;
+  colorId: string;
   name: string;
   colorName: string;
   colorHex: string;
@@ -102,14 +43,7 @@ export type OrderItem = {
   readyNow: boolean;
 };
 
-export type Customer = {
-  name: string;
-  phone: string;
-  email: string;
-  city: string;
-  address: string;
-  notes: string;
-};
+export type Customer = { name: string; phone: string; email: string; city: string; address: string; notes: string };
 
 export type Order = {
   id: string;
@@ -120,6 +54,8 @@ export type Order = {
   total: number;
   status: OrderStatus;
   payment: string;
+  /** stock has been deducted for this order (happens when the shop confirms it) */
+  stockApplied: boolean;
 };
 
 export type Message = {
@@ -135,118 +71,206 @@ export type Message = {
 
 export type CartLine = { productId: string; colorId: string; qty: number };
 
-// ——— Seed back-office data so the admin isn't empty on first open
+// ——— Small external-store helper
 
-const seedItem = (slug: string, colorIndex: number, qty: number, readyNow = true): OrderItem => {
-  const p = seedProducts.find((x) => x.slug === slug)!;
-  const col = p.colors[colorIndex];
-  return { productId: p.id, name: p.name, colorName: col.name, colorHex: col.hex, price: p.price, qty, image: p.images[0], readyNow };
-};
-
-const mkOrder = (n: number, date: string, customer: Partial<Customer> & { name: string; city: string }, items: OrderItem[], status: OrderStatus): Order => ({
-  id: `seed-${n}`,
-  number: `RD-${n}`,
-  createdAt: date,
-  customer: { phone: "+961 70 000 000", email: "", address: "—", notes: "", ...customer },
-  items,
-  total: items.reduce((s, i) => s + i.price * i.qty, 0),
-  status,
-  payment: "Cash on delivery",
-});
-
-const seedOrders: Order[] = [
-  mkOrder(1004, "2026-10-24T10:15:00Z", { name: "Maya K.", city: "Beirut" }, [seedItem("tawleh-backgammon", 0, 1), seedItem("soleil-cushion", 0, 2)], "New"),
-  mkOrder(1003, "2026-10-22T15:40:00Z", { name: "Karim S.", city: "Jounieh" }, [seedItem("velours-cube-pouf", 0, 1, false)], "Preparing"),
-  mkOrder(1002, "2026-10-19T09:05:00Z", { name: "Nour H.", city: "Batroun" }, [seedItem("nido-nesting-tables", 0, 1), seedItem("dune-ceramic-vase", 0, 1)], "Shipped"),
-  mkOrder(1001, "2026-10-15T18:20:00Z", { name: "Lea M.", city: "Beirut" }, [seedItem("or-hammered-vases", 0, 1)], "Delivered"),
-];
-
-const seedMessages: Message[] = [
-  { id: "seed-m2", name: "Rita A.", email: "rita@example.com", phone: "", topic: "Custom request", message: "Hi! Is the Cubo side table available in a dusty pink? I'd need two of them.", createdAt: "2026-10-25T11:30:00Z", read: false },
-  { id: "seed-m1", name: "Joe B.", email: "joe@example.com", phone: "+961 3 000 000", topic: "Order & delivery", message: "Do you deliver to Tripoli and how long would it take?", createdAt: "2026-10-23T08:10:00Z", read: true },
-];
-
-// ——— Stores
-
-const productsStore = createStore<Product[]>("rd:v1:products", seedProducts);
-const ordersStore = createStore<Order[]>("rd:v1:orders", seedOrders);
-const messagesStore = createStore<Message[]>("rd:v1:messages", seedMessages);
-const cartStore = createStore<CartLine[]>("rd:v1:cart", []);
-
-// Cart drawer open/closed (in-memory, not persisted)
-let cartOpen = false;
-const cartOpenListeners = new Set<Listener>();
-export const setCartOpen = (v: boolean) => {
-  cartOpen = v;
-  cartOpenListeners.forEach((l) => l());
-};
-export const useCartOpen = () =>
-  useSyncExternalStore(
-    (l) => {
-      cartOpenListeners.add(l);
-      return () => cartOpenListeners.delete(l);
+function createState<T>(initial: T, server: T) {
+  let value = initial;
+  const listeners = new Set<Listener>();
+  return {
+    get: () => value,
+    set: (next: T) => {
+      value = next;
+      listeners.forEach((l) => l());
     },
-    () => cartOpen,
-    () => false,
-  );
+    subscribe: (l: Listener) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+    server: () => server,
+  };
+}
+
+// ——— Auth (admin)
+
+type AdminState = { status: "loading" | "signed-out" | "signed-in" | "not-admin"; email: string | null };
+const adminState = createState<AdminState>({ status: "loading", email: null }, { status: "loading", email: null });
+const authWatchers = new Set<(u: User | null) => void>();
+let authStarted = false;
+
+function startAuth() {
+  if (authStarted || typeof window === "undefined") return;
+  authStarted = true;
+  onAuthStateChanged(auth, (u) => {
+    adminState.set(
+      !u ? { status: "signed-out", email: null } : { status: isAdminEmail(u.email) ? "signed-in" : "not-admin", email: u.email },
+    );
+    authWatchers.forEach((w) => w(u));
+  });
+}
+
+export const useAdmin = () => {
+  startAuth();
+  return useSyncExternalStore(adminState.subscribe, adminState.get, adminState.server);
+};
+
+export async function login(email: string, password: string) {
+  const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+  if (!isAdminEmail(cred.user.email)) {
+    await signOut(auth);
+    throw new Error("This account doesn't have admin access.");
+  }
+}
+
+export const logout = () => signOut(auth);
+
+// ——— Live Firestore collections
+
+type CollectionState<T> = { items: T[]; loaded: boolean; error: string | null };
+
+function liveCollection<T extends { id: string }>(name: string, sortField: string, adminOnly: boolean) {
+  const EMPTY: CollectionState<T> = { items: [], loaded: false, error: null };
+  const state = createState<CollectionState<T>>(EMPTY, EMPTY);
+  let stop: (() => void) | null = null;
+  let users = 0;
+  let allowed = !adminOnly; // admin collections are only readable by a signed-in admin
+
+  const start = () => {
+    if (stop || users === 0 || !allowed) return;
+    stop = onSnapshot(
+      query(collection(db, name), orderBy(sortField, "desc")),
+      (snap) => state.set({ items: snap.docs.map((d) => ({ ...(d.data() as T), id: d.id })), loaded: true, error: null }),
+      (err) => {
+        console.error(`[firestore:${name}]`, err);
+        stop = null;
+        state.set({ items: [], loaded: true, error: err.message });
+      },
+    );
+  };
+  const halt = () => {
+    stop?.();
+    stop = null;
+  };
+
+  if (adminOnly) {
+    authWatchers.add((u) => {
+      allowed = !!u && isAdminEmail(u.email);
+      if (allowed) start();
+      else {
+        halt();
+        state.set(EMPTY);
+      }
+    });
+  }
+
+  const subscribe = (l: Listener) => {
+    const off = state.subscribe(l);
+    users++;
+    if (adminOnly) startAuth();
+    start();
+    return () => {
+      off();
+      if (--users === 0) halt();
+    };
+  };
+
+  return { get: state.get, use: () => useSyncExternalStore(subscribe, state.get, state.server) };
+}
+
+const productsCol = liveCollection<Product>("products", "createdAt", false);
+const ordersCol = liveCollection<Order>("orders", "createdAt", true);
+const messagesCol = liveCollection<Message>("messages", "createdAt", true);
 
 // ——— Products
 
-export const useProducts = () => productsStore.use();
-/** Products visible on the storefront. */
+/** { items, loaded, error } — use `loaded` to show skeletons instead of "empty". */
+export const useProductsState = () => productsCol.use();
+export const useProducts = () => productsCol.use().items;
 export const useActiveProducts = () => {
   const all = useProducts();
   return useMemo(() => all.filter((p) => p.active), [all]);
 };
-export const useProduct = (idOrSlug: string) => {
-  const all = useProducts();
-  return all.find((p) => p.id === idOrSlug || p.slug === idOrSlug);
+export const useProduct = (idOrSlug: string) => useProducts().find((p) => p.id === idOrSlug || p.slug === idOrSlug);
+
+export const saveProduct = (product: Product) => setDoc(doc(db, "products", product.id), product);
+export const deleteProduct = (id: string) => deleteDoc(doc(db, "products", id));
+export const setProductActive = (id: string, active: boolean) => updateDoc(doc(db, "products", id), { active });
+
+export const setColorQuantity = (productId: string, colorId: string, quantity: number) => {
+  const p = productsCol.get().items.find((x) => x.id === productId);
+  if (!p) return Promise.resolve();
+  const q = Math.max(0, Math.floor(quantity) || 0);
+  return updateDoc(doc(db, "products", productId), {
+    colors: p.colors.map((c) => (c.id === colorId ? { ...c, quantity: q } : c)),
+  });
 };
 
-export const saveProduct = (product: Product) =>
-  productsStore.update((list) => {
-    const i = list.findIndex((p) => p.id === product.id);
-    if (i === -1) return [product, ...list];
-    const next = [...list];
-    next[i] = product;
-    return next;
-  });
+/** Admin: load the 28 demo products into Firestore (overwrites same ids). */
+export async function importDemoProducts() {
+  const batch = writeBatch(db);
+  seedProducts.forEach((p) => batch.set(doc(db, "products", p.id), p));
+  await batch.commit();
+}
 
-export const deleteProduct = (id: string) => productsStore.update((list) => list.filter((p) => p.id !== id));
+// ——— Cart (per visitor, localStorage)
 
-export const setColorQuantity = (productId: string, colorId: string, quantity: number) =>
-  productsStore.update((list) =>
-    list.map((p) =>
-      p.id !== productId
-        ? p
-        : { ...p, colors: p.colors.map((c) => (c.id === colorId ? { ...c, quantity: Math.max(0, Math.floor(quantity) || 0) } : c)) },
-    ),
-  );
+const CART_KEY = "rd:v1:cart";
+let cartCache: { raw: string | null; value: CartLine[] } | null = null;
+const cartListeners = new Set<Listener>();
+const NO_LINES: CartLine[] = [];
 
-export const setProductActive = (productId: string, active: boolean) =>
-  productsStore.update((list) => list.map((p) => (p.id === productId ? { ...p, active } : p)));
+const readCart = (): CartLine[] => {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(CART_KEY);
+  } catch {}
+  if (cartCache && cartCache.raw === raw) return cartCache.value;
+  let value: CartLine[] = NO_LINES;
+  try {
+    value = raw ? (JSON.parse(raw) as CartLine[]) : NO_LINES;
+  } catch {}
+  cartCache = { raw, value };
+  return value;
+};
+const writeCart = (lines: CartLine[]) => {
+  const raw = JSON.stringify(lines);
+  try {
+    localStorage.setItem(CART_KEY, raw);
+  } catch {}
+  cartCache = { raw, value: lines };
+  cartListeners.forEach((l) => l());
+};
+const subscribeCart = (l: Listener) => {
+  cartListeners.add(l);
+  const onStorage = (e: StorageEvent) => e.key === CART_KEY && l();
+  window.addEventListener("storage", onStorage);
+  return () => {
+    cartListeners.delete(l);
+    window.removeEventListener("storage", onStorage);
+  };
+};
 
-// ——— Cart
+export const useCart = () => useSyncExternalStore(subscribeCart, readCart, () => NO_LINES);
 
-export const useCart = () => cartStore.use();
+export const addToCart = (productId: string, colorId: string, qty = 1) => {
+  const lines = readCart();
+  const i = lines.findIndex((l) => l.productId === productId && l.colorId === colorId);
+  writeCart(i === -1 ? [...lines, { productId, colorId, qty }] : lines.map((l, j) => (j === i ? { ...l, qty: l.qty + qty } : l)));
+};
 
-export const addToCart = (productId: string, colorId: string, qty = 1) =>
-  cartStore.update((lines) => {
-    const i = lines.findIndex((l) => l.productId === productId && l.colorId === colorId);
-    if (i === -1) return [...lines, { productId, colorId, qty }];
-    const next = [...lines];
-    next[i] = { ...next[i], qty: next[i].qty + qty };
-    return next;
-  });
-
-export const setCartQty = (productId: string, colorId: string, qty: number) =>
-  cartStore.update((lines) =>
+export const setCartQty = (productId: string, colorId: string, qty: number) => {
+  const lines = readCart();
+  writeCart(
     qty <= 0
       ? lines.filter((l) => !(l.productId === productId && l.colorId === colorId))
       : lines.map((l) => (l.productId === productId && l.colorId === colorId ? { ...l, qty } : l)),
   );
+};
 
-export const clearCart = () => cartStore.write([]);
+export const clearCart = () => writeCart([]);
+
+const cartOpenState = createState(false, false);
+export const setCartOpen = (v: boolean) => cartOpenState.set(v);
+export const useCartOpen = () => useSyncExternalStore(cartOpenState.subscribe, cartOpenState.get, cartOpenState.server);
 
 /** Cart lines joined with live product data. */
 export const useCartDetails = () => {
@@ -270,86 +294,88 @@ export const useCartDetails = () => {
 
 // ——— Orders
 
-export const useOrders = () => ordersStore.use();
+export const useOrders = () => ordersCol.use().items;
 
-export const placeOrder = (customer: Customer): Order => {
-  const lines = cartStore.read();
-  const products = productsStore.read();
-  const items: OrderItem[] = [];
-  const nextProducts = products.map((p) => ({ ...p, colors: p.colors.map((c) => ({ ...c })) }));
-
-  for (const l of lines) {
-    const p = nextProducts.find((x) => x.id === l.productId);
+/** Customer checkout: creates the order. Stock is deducted when the shop confirms it. */
+export async function placeOrder(customer: Customer): Promise<Order> {
+  const products = productsCol.get().items;
+  const items: OrderItem[] = readCart().flatMap((l) => {
+    const p = products.find((x) => x.id === l.productId);
     const col = p?.colors.find((x) => x.id === l.colorId);
-    if (!p || !col) continue;
-    const readyNow = col.quantity >= l.qty;
-    col.quantity = Math.max(0, col.quantity - l.qty); // reserve what's in stock
-    items.push({ productId: p.id, name: p.name, colorName: col.name, colorHex: col.hex, price: p.price, qty: l.qty, image: p.images[0] ?? "", readyNow });
-  }
+    if (!p || !col) return [];
+    return [{
+      productId: p.id, colorId: col.id, name: p.name, colorName: col.name, colorHex: col.hex,
+      price: p.price, qty: l.qty, image: p.images[0] ?? "", readyNow: col.quantity >= l.qty,
+    }];
+  });
+  if (items.length === 0) throw new Error("Your bag is empty.");
 
-  const orders = ordersStore.read();
-  const lastNumber = Math.max(1000, ...orders.map((o) => Number(o.number.replace(/\D/g, "")) || 0));
-  const order: Order = {
-    id: uid(),
-    number: `RD-${lastNumber + 1}`,
-    createdAt: new Date().toISOString(),
+  const now = new Date();
+  const order: Omit<Order, "id"> = {
+    number: `RD-${now.getFullYear().toString().slice(2)}${String(now.getMonth() + 1).padStart(2, "0")}-${uid().slice(0, 4).toUpperCase()}`,
+    createdAt: now.toISOString(),
     customer,
     items,
     total: items.reduce((s, i) => s + i.price * i.qty, 0),
     status: "New",
     payment: "Cash on delivery",
+    stockApplied: false,
   };
-
-  productsStore.write(nextProducts);
-  ordersStore.write([order, ...orders]);
+  const ref = await addDoc(collection(db, "orders"), order);
   clearCart();
-  return order;
-};
+  return { ...order, id: ref.id };
+}
 
-export const updateOrderStatus = (id: string, status: OrderStatus) =>
-  ordersStore.update((list) => list.map((o) => (o.id === id ? { ...o, status } : o)));
+/**
+ * Admin: change status. The first move out of "New" (except to Cancelled) deducts
+ * stock; cancelling an order whose stock was deducted puts it back.
+ */
+export async function updateOrderStatus(id: string, status: OrderStatus) {
+  await runTransaction(db, async (tx) => {
+    const orderRef = doc(db, "orders", id);
+    const snap = await tx.get(orderRef);
+    if (!snap.exists()) return;
+    const order = snap.data() as Order;
+    const deduct = !order.stockApplied && status !== "New" && status !== "Cancelled";
+    const restore = order.stockApplied && status === "Cancelled";
 
-export const deleteOrder = (id: string) => ordersStore.update((list) => list.filter((o) => o.id !== id));
+    if (deduct || restore) {
+      const ids = [...new Set(order.items.map((i) => i.productId))];
+      const docs = await Promise.all(ids.map((pid) => tx.get(doc(db, "products", pid))));
+      docs.forEach((d) => {
+        if (!d.exists()) return;
+        const p = d.data() as Product;
+        const colors = p.colors.map((c) => {
+          const used = order.items.filter((i) => i.productId === d.id && i.colorId === c.id).reduce((s, i) => s + i.qty, 0);
+          return used ? { ...c, quantity: Math.max(0, c.quantity + (deduct ? -used : used)) } : c;
+        });
+        tx.update(d.ref, { colors });
+      });
+    }
+    tx.update(orderRef, { status, stockApplied: deduct ? true : restore ? false : order.stockApplied });
+  });
+}
+
+export const deleteOrder = (id: string) => deleteDoc(doc(db, "orders", id));
 
 // ——— Messages
 
-export const useMessages = () => messagesStore.use();
+export const useMessages = () => messagesCol.use().items;
 
 export const addMessage = (m: Omit<Message, "id" | "createdAt" | "read">) =>
-  messagesStore.update((list) => [{ ...m, id: uid(), createdAt: new Date().toISOString(), read: false }, ...list]);
+  addDoc(collection(db, "messages"), { ...m, createdAt: new Date().toISOString(), read: false });
 
-export const markMessageRead = (id: string) =>
-  messagesStore.update((list) => list.map((m) => (m.id === id ? { ...m, read: true } : m)));
+export const markMessageRead = (id: string) => updateDoc(doc(db, "messages", id), { read: true });
+export const deleteMessage = (id: string) => deleteDoc(doc(db, "messages", id));
 
-export const deleteMessage = (id: string) => messagesStore.update((list) => list.filter((m) => m.id !== id));
+// ——— Utilities
 
-// ——— Demo utilities
-
-export const resetDemoData = () => {
-  productsStore.reset();
-  ordersStore.reset();
-  messagesStore.reset();
-  cartStore.reset();
-};
-
-export const exportDemoData = () =>
+export const exportData = () =>
   JSON.stringify(
-    { products: productsStore.read(), orders: ordersStore.read(), messages: messagesStore.read(), exportedAt: new Date().toISOString() },
+    { products: productsCol.get().items, orders: ordersCol.get().items, messages: messagesCol.get().items, exportedAt: new Date().toISOString() },
     null,
     2,
   );
-
-/** Approximate bytes used by the demo in localStorage. */
-export const storageUsage = () => {
-  let bytes = 0;
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)!;
-      if (k.startsWith("rd:")) bytes += (k.length + (localStorage.getItem(k)?.length ?? 0)) * 2;
-    }
-  } catch {}
-  return bytes;
-};
 
 /** false during server render / hydration, true once running in the browser. */
 export const useHydrated = () =>
@@ -358,18 +384,3 @@ export const useHydrated = () =>
     () => true,
     () => false,
   );
-
-// ——— Demo admin login (browser-only check — replace with real auth with the backend)
-
-export const DEMO_LOGIN = { username: "demo", password: "roze2026" };
-
-const sessionStore = createStore<string | null>("rd:v1:session", null);
-export const useSession = () => sessionStore.use();
-
-export const login = (username: string, password: string) => {
-  if (username.trim().toLowerCase() !== DEMO_LOGIN.username || password !== DEMO_LOGIN.password) return false;
-  sessionStore.write(DEMO_LOGIN.username);
-  return true;
-};
-
-export const logout = () => sessionStore.reset();

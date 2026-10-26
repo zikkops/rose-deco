@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Clock, Package, Plus, ShoppingCart } from "lucide-react";
 import { PageHeader } from "./AdminShell";
+import { EmptyCatalogBanner } from "./EmptyCatalogBanner";
 import { QtyStepper } from "./QtyStepper";
 import { StatusBadge, StockPill } from "./StatusBadge";
 import { SmartImage } from "@/components/SmartImage";
@@ -40,6 +41,7 @@ export function Dashboard() {
         }
       />
 
+      <EmptyCatalogBanner />
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         {kpis.map((k, i) => (
           <div key={k.label} className={`card-admin p-4 sm:p-5 ${i === 4 ? "col-span-2 lg:col-span-1" : ""}`}>

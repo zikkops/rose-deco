@@ -6,10 +6,12 @@ import { addMessage } from "@/lib/store";
 
 const topics = ["Product enquiry", "Place an order", "Custom request", "Order & delivery", "Collaboration"];
 
-// Demo: messages are saved in the browser and show up in Admin → Messages.
+// Messages are saved to Firestore and show up in Admin → Messages.
 export function ContactForm() {
   const [topic, setTopic] = useState(topics[0]);
   const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   if (sent) {
     return (
@@ -31,19 +33,28 @@ export function ContactForm() {
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
         const v = (k: string) => String(f.get(k) ?? "").trim();
         const piece = v("piece");
-        addMessage({
+        setBusy(true);
+        setError("");
+        try {
+          await addMessage({
           name: `${v("first")} ${v("last")}`.trim(),
           email: v("email"),
           phone: v("phone"),
           topic,
           message: piece ? `[${piece}] ${v("message")}` : v("message"),
-        });
-        setSent(true);
+          });
+          setSent(true);
+        } catch (err) {
+          console.error(err);
+          setError("Your message couldn’t be sent. Please try again or email us directly.");
+        } finally {
+          setBusy(false);
+        }
       }}
     >
       <p className="text-xs tracking-[0.2em] uppercase">How can we help?</p>
@@ -85,8 +96,9 @@ export function ContactForm() {
         Roze Déco.
       </label>
 
-      <button type="submit" className="btn-dark mt-10">
-        Send message
+      {error && <p className="mt-6 text-sm text-danger">{error}</p>}
+      <button type="submit" disabled={busy} className="btn-dark mt-10 disabled:opacity-60">
+        {busy ? "Sending…" : "Send message"}
       </button>
     </form>
   );

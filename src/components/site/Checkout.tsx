@@ -5,11 +5,14 @@ import { useState } from "react";
 import { Check, Clock } from "lucide-react";
 import { SmartImage } from "@/components/SmartImage";
 import { MADE_TO_ORDER_LEAD, formatPrice } from "@/lib/catalog";
-import { placeOrder, useCartDetails, type Order } from "@/lib/store";
+import { placeOrder, useCartDetails, useProductsState, type Order } from "@/lib/store";
 
 export function Checkout() {
   const { items, subtotal, hasMadeToOrder } = useCartDetails();
   const [placed, setPlaced] = useState<Order | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const { loaded } = useProductsState();
 
   if (placed) {
     const waiting = placed.items.filter((i) => !i.readyNow);
@@ -34,6 +37,8 @@ export function Checkout() {
     );
   }
 
+  if (!loaded) return <div className="container-lux h-96 animate-pulse py-16"><div className="h-full bg-linen" /></div>;
+
   if (items.length === 0) {
     return (
       <div className="container-lux flex flex-col items-center py-32 text-center">
@@ -46,12 +51,21 @@ export function Checkout() {
   return (
     <form
       className="container-lux grid gap-12 py-12 lg:grid-cols-12 lg:gap-16 lg:py-16"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
         const v = (k: string) => String(f.get(k) ?? "").trim();
-        setPlaced(placeOrder({ name: v("name"), phone: v("phone"), email: v("email"), city: v("city"), address: v("address"), notes: v("notes") }));
-        window.scrollTo({ top: 0 });
+        setBusy(true);
+        setError("");
+        try {
+          setPlaced(await placeOrder({ name: v("name"), phone: v("phone"), email: v("email"), city: v("city"), address: v("address"), notes: v("notes") }));
+          window.scrollTo({ top: 0 });
+        } catch (err) {
+          console.error(err);
+          setError("We couldn’t place your order. Please check your connection and try again, or contact us directly.");
+        } finally {
+          setBusy(false);
+        }
       }}
     >
       <div className="lg:col-span-7">
@@ -103,7 +117,8 @@ export function Checkout() {
             <span className="font-medium">{formatPrice(subtotal)}</span>
           </div>
           <p className="mt-1 text-xs text-stone">Delivery fee confirmed by phone.</p>
-          <button type="submit" className="btn-dark mt-6 w-full">Place order</button>
+          {error && <p className="mt-4 text-sm text-danger">{error}</p>}
+          <button type="submit" disabled={busy} className="btn-dark mt-6 w-full disabled:opacity-60">{busy ? "Placing order…" : "Place order"}</button>
         </div>
       </aside>
     </form>

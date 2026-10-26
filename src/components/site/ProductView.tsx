@@ -7,7 +7,8 @@ import { SmartImage } from "@/components/SmartImage";
 import { ProductCard } from "./ProductCard";
 import { StockTag } from "./StockTag";
 import { MADE_TO_ORDER_LEAD, formatPrice, getCategory } from "@/lib/catalog";
-import { addToCart, setCartOpen, useActiveProducts, useProduct } from "@/lib/store";
+import { addToCart, setCartOpen, useActiveProducts, useProduct, useProductsState } from "@/lib/store";
+import { ProductSkeleton } from "./Skeletons";
 
 export function ProductView({ slug }: { slug: string }) {
   const product = useProduct(slug);
@@ -16,6 +17,9 @@ export function ProductView({ slug }: { slug: string }) {
   const [colorId, setColorId] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<"details" | "dimensions">("details");
+  const { loaded } = useProductsState();
+
+  if (!loaded) return <ProductSkeleton />;
 
   if (!product || !product.active) {
     return (

@@ -8,17 +8,16 @@ import { QtyStepper } from "./QtyStepper";
 import { StockPill } from "./StatusBadge";
 import { SmartImage } from "@/components/SmartImage";
 import { categories, slugify, type ColorVariant, type Product } from "@/lib/catalog";
-import { fileToCompressedDataUrl } from "@/lib/image";
-import { StorageFullError, deleteProduct, saveProduct, uid, useHydrated, useProducts } from "@/lib/store";
+import { imageUploadReady, uploadProductImage } from "@/lib/image";
+import { deleteProduct, saveProduct, uid, useProductsState } from "@/lib/store";
 
 export function ProductEditor() {
   const id = useSearchParams().get("id");
-  const products = useProducts();
-  const hydrated = useHydrated();
+  const { items: products, loaded } = useProductsState();
   const product = id ? products.find((p) => p.id === id) : undefined;
 
   if (id && !product) {
-    if (!hydrated) return <div className="h-96 animate-pulse rounded-xl bg-linen" />;
+    if (!loaded) return <div className="h-96 animate-pulse rounded-xl bg-linen" />;
     return (
       <div className="card-admin p-10 text-center">
         <p className="font-serif text-2xl">Product not found</p>
@@ -62,8 +61,10 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
     setBusy(true);
     setError("");
     try {
-      const urls = await Promise.all([...files].map((f) => fileToCompressedDataUrl(f)));
-      setImages((imgs) => [...imgs, ...urls]);
+      for (const f of [...files]) {
+        const url = await uploadProductImage(f);
+        setImages((imgs) => [...imgs, url]);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed.");
     } finally {
@@ -84,7 +85,7 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
   const updateColor = (i: number, patch: Partial<ColorVariant>) =>
     setColors((cs) => cs.map((c, j) => (j === i ? { ...c, ...patch } : c)));
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     const priceNum = Number(price);
@@ -120,13 +121,17 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
       createdAt: initial?.createdAt ?? Date.now(),
     };
 
+    setBusy(true);
     try {
-      saveProduct(product);
+      await saveProduct(product);
     } catch (err) {
-      return setError(err instanceof StorageFullError ? err.message : "Could not save. Please try again.");
+      console.error(err);
+      return setError("Could not save — check your connection and that you are logged in as an admin.");
+    } finally {
+      setBusy(false);
     }
     if (isNew) router.replace(`/admin/products/edit?id=${encodeURIComponent(product.id)}`);
-    flash("Saved — live on the site in this browser");
+    flash("Saved — live on the website");
   };
 
   return (
@@ -237,7 +242,11 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
                 Add
               </button>
             </div>
-            <p className="mt-2 text-xs text-stone">Demo: uploads are resized and stored in this browser. Real image storage comes with the proper backend.</p>
+            <p className="mt-2 text-xs text-stone">
+              {imageUploadReady()
+                ? "Photos are resized and uploaded to image hosting automatically."
+                : "Image upload isn’t connected yet — paste image links for now."}
+            </p>
           </section>
 
           <section className="card-admin p-5">
@@ -305,9 +314,13 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
                 <div className="mt-3 flex gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      deleteProduct(initial.id);
-                      router.push("/admin/products");
+                    onClick={async () => {
+                      try {
+                        await deleteProduct(initial.id);
+                        router.push("/admin/products");
+                      } catch {
+                        setError("Could not delete the product. Please try again.");
+                      }
                     }}
                     className="rounded-md bg-danger px-3 py-2 text-sm text-white"
                   >

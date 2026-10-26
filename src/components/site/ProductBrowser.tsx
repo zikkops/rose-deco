@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Grid3x3, LayoutGrid, SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "./ProductCard";
 import { categories, isReadyNow } from "@/lib/catalog";
-import { useActiveProducts } from "@/lib/store";
+import { useActiveProducts, useProductsState } from "@/lib/store";
+import { CardsSkeleton } from "./Skeletons";
 
 type Sort = "featured" | "newest" | "price-asc" | "price-desc";
 
@@ -38,6 +39,7 @@ const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x
 
 export function ProductBrowser({ category }: { category?: string }) {
   const all = useActiveProducts();
+  const { loaded } = useProductsState();
   const products = useMemo(() => (category ? all.filter((p) => p.category === category) : all), [all, category]);
 
   const [filters, setFilters] = useState<Filters>(empty);
@@ -248,7 +250,9 @@ export function ProductBrowser({ category }: { category?: string }) {
             </div>
           )}
 
-          {results.length === 0 ? (
+          {!loaded ? (
+            <CardsSkeleton count={6} />
+          ) : results.length === 0 ? (
             <div className="flex flex-col items-center py-24 text-center">
               <p className="font-serif text-3xl">No pieces match your selection</p>
               <p className="mt-3 text-sm text-taupe">Try removing a filter or two to see more.</p>

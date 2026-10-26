@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// Roze Déco — Firestore security rules.
+// Paste into Firebase console → Firestore → Rules (or deploy with the Firebase CLI).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Keep this list in sync with ADMIN_EMAILS in src/lib/firebase.ts
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['rozedecohq@gmail.com', 'demo@rozedeco.com'];
+    }
+
+    // Catalogue: anyone can read, only admins can change it.
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders: customers can place a new order; only admins can read or manage them.
+    match /orders/{id} {
+      allow create: if request.resource.data.status == 'New'
+        && request.resource.data.stockApplied == false
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 50
+        && request.resource.data.customer.name is string
+        && request.resource.data.customer.phone is string;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Contact messages: anyone can send one; only admins can read or manage them.
+    match /messages/{id} {
+      allow create: if request.resource.data.read == false
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 5000;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

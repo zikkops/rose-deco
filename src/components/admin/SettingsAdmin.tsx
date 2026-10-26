@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Download, RotateCcw } from "lucide-react";
+import { Database, Download } from "lucide-react";
 import { PageHeader } from "./AdminShell";
 import { brand } from "@/lib/brand";
 import { MADE_TO_ORDER_LEAD } from "@/lib/catalog";
-import { exportDemoData, resetDemoData, storageUsage, useHydrated, useOrders, useProducts } from "@/lib/store";
+import { imageUploadReady } from "@/lib/image";
+import { exportData, importDemoProducts, useOrders, useProductsState } from "@/lib/store";
 
 function Section({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
@@ -27,18 +28,15 @@ const Row = ({ label, value }: { label: string; value: string }) => (
 );
 
 export function SettingsAdmin() {
-  const hydrated = useHydrated();
-  // re-render when data changes so the storage figure stays current
-  useProducts();
-  useOrders();
-  const [confirmReset, setConfirmReset] = useState(false);
-  const [done, setDone] = useState("");
-
-  const usedKb = hydrated ? Math.round(storageUsage() / 1024) : 0;
+  const { items: products, loaded } = useProductsState();
+  const orders = useOrders();
+  const [confirmImport, setConfirmImport] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
 
   return (
     <>
-      <PageHeader title="Settings" subtitle="Store information and demo data" />
+      <PageHeader title="Settings" subtitle="Store information and data" />
 
       <Section title="Store details" desc="Shown on the website. Ask your developer to change these for now.">
         <Row label="Store name" value={brand.name} />
@@ -50,52 +48,59 @@ export function SettingsAdmin() {
         <Row label="Out-of-stock lead time" value={MADE_TO_ORDER_LEAD} />
       </Section>
 
-      <Section title="Demo data" desc="In this demo, everything you change is saved in this browser only. Other people and devices still see the original demo catalogue.">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-stone">Storage used</span>
-          <span className="tabular-nums">{usedKb} KB of ~5,000 KB</span>
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-linen">
-          <div className="h-full rounded-full bg-ink" style={{ width: `${Math.min(100, usedKb / 50)}%` }} />
-        </div>
-        <p className="text-xs text-stone">Uploaded photos take the most space. If it fills up, remove a few images or use image links instead.</p>
+      <Section title="Connections" desc="Where the website's data and images live.">
+        <Row label="Database" value="Firebase Firestore (rose-deco)" />
+        <Row label="Admin login" value="Firebase Authentication" />
+        <Row label="Image hosting" value={imageUploadReady() ? "Cloudinary — connected" : "Cloudinary — not connected yet"} />
+        <Row label="Products in database" value={loaded ? String(products.length) : "…"} />
+        <Row label="Orders in database" value={String(orders.length)} />
+      </Section>
 
-        <div className="flex flex-wrap gap-2 pt-2">
+      <Section title="Data" desc="Load the demo catalogue to start from, or download a backup of everything.">
+        <div className="flex flex-wrap gap-2">
+          {confirmImport ? (
+            <>
+              <button
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await importDemoProducts();
+                    setMsg("28 demo products imported.");
+                  } catch {
+                    setMsg("Import failed — check you are logged in as an admin.");
+                  } finally {
+                    setBusy(false);
+                    setConfirmImport(false);
+                  }
+                }}
+                className="rounded-md bg-ink px-4 py-2 text-sm text-ivory disabled:opacity-60"
+              >
+                {busy ? "Importing…" : "Yes, import"}
+              </button>
+              <button onClick={() => setConfirmImport(false)} className="rounded-md border border-sand px-4 py-2 text-sm">Cancel</button>
+            </>
+          ) : (
+            <button onClick={() => setConfirmImport(true)} className="flex items-center gap-2 rounded-md border border-sand px-4 py-2 text-sm hover:border-ink">
+              <Database className="size-4" /> Import demo products
+            </button>
+          )}
           <button
             onClick={() => {
-              const blob = new Blob([exportDemoData()], { type: "application/json" });
+              const blob = new Blob([exportData()], { type: "application/json" });
               const a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
-              a.download = `roze-deco-data-${new Date().toISOString().slice(0, 10)}.json`;
+              a.download = `roze-deco-backup-${new Date().toISOString().slice(0, 10)}.json`;
               a.click();
               URL.revokeObjectURL(a.href);
             }}
             className="flex items-center gap-2 rounded-md border border-sand px-4 py-2 text-sm hover:border-ink"
           >
-            <Download className="size-4" /> Export data (JSON)
+            <Download className="size-4" /> Download backup (JSON)
           </button>
-          {confirmReset ? (
-            <>
-              <button
-                onClick={() => {
-                  resetDemoData();
-                  setConfirmReset(false);
-                  setDone("Demo data reset to the original catalogue.");
-                }}
-                className="rounded-md bg-danger px-4 py-2 text-sm text-white"
-              >
-                Yes, reset everything
-              </button>
-              <button onClick={() => setConfirmReset(false)} className="rounded-md border border-sand px-4 py-2 text-sm">Cancel</button>
-            </>
-          ) : (
-            <button onClick={() => setConfirmReset(true)} className="flex items-center gap-2 rounded-md border border-danger/40 px-4 py-2 text-sm text-danger hover:bg-danger/5">
-              <RotateCcw className="size-4" /> Reset demo data
-            </button>
-          )}
         </div>
-        {done && <p className="text-sm text-success">{done}</p>}
-        <p className="text-xs text-stone">The export contains all products, orders and messages — useful for moving to the real backend later.</p>
+        {msg && <p className="text-sm">{msg}</p>}
+        <p className="text-xs text-stone">Importing re-adds the 28 demo products (it overwrites demo products with the same name, and doesn&apos;t touch products you created).</p>
       </Section>
     </>
   );

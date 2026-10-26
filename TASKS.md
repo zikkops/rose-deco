@@ -11,13 +11,14 @@
 - [x] Bag (cart drawer) + checkout (cash on delivery) → order appears in admin, stock is reserved
 - [x] Contact form → message appears in admin
 - [x] Demo admin (`/admin`): dashboard, products (add / edit / delete, images, colours, quantities, show/hide, featured, new), orders (status, details), messages, settings (export / reset)
-- [x] Demo admin login (`demo` / `roze2026`, shown on the login page)
-- [x] Demo data layer in the browser (`src/lib/store.ts`, localStorage)
+- [x] Demo admin login shown on the login page (`demo@rozedeco.com` / `roze2026`)
 
 ## Before going live (after client approval)
-- [ ] Real backend + database for products, orders, messages (replace functions in `src/lib/store.ts`)
-- [ ] Image storage for uploads (replace `src/lib/image.ts`)
-- [ ] Admin login / authentication
+- [x] Firebase Firestore database connected (products, orders, messages) + security rules
+- [x] Admin login with Firebase Authentication (public sign-up disabled)
+- [ ] Create admin users in Firebase (rozedecohq@gmail.com + demo@rozedeco.com / roze2026)
+- [ ] Import demo products from the admin (first run)
+- [ ] Cloudinary account + unsigned upload preset → set `CLOUDINARY.cloudName` in `src/lib/image.ts`
 - [ ] Order notifications (email / WhatsApp) to the shop
 - [ ] Real product photos, names, prices and colours
 - [ ] Delivery fees & policy, returns policy

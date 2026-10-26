@@ -14,7 +14,7 @@ import {
   ShoppingCart,
   X,
 } from "lucide-react";
-import { logout, useHydrated, useMessages, useOrders, useSession } from "@/lib/store";
+import { logout, useAdmin, useMessages, useOrders } from "@/lib/store";
 import { Logo } from "@/components/Logo";
 
 const links = [
@@ -36,15 +36,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   // Demo login gate
   const router = useRouter();
-  const hydrated = useHydrated();
-  const session = useSession();
+  const admin = useAdmin();
   const isLogin = pathname === "/admin/login";
+  const signedIn = admin.status === "signed-in";
   useEffect(() => {
-    if (hydrated && !session && !isLogin) router.replace(`/admin/login?next=${encodeURIComponent(pathname)}`);
-  }, [hydrated, session, isLogin, pathname, router]);
+    if (admin.status !== "loading" && !signedIn && !isLogin) router.replace(`/admin/login?next=${encodeURIComponent(pathname)}`);
+  }, [admin.status, signedIn, isLogin, pathname, router]);
 
   if (isLogin) return <>{children}</>;
-  if (!hydrated || !session) return <div className="min-h-screen bg-[#fafafa]" aria-busy="true" />;
+  if (!signedIn) return <div className="min-h-screen bg-[#fafafa]" aria-busy="true" />;
 
   const sidebar = (
     <div className="flex h-full flex-col bg-ink text-ivory/70">
@@ -76,9 +76,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         ))}
       </nav>
       <div className="m-3 rounded-lg border border-ivory/10 p-4 text-xs">
-        <p className="text-ivory">Demo mode</p>
+        <p className="text-ivory">Live data</p>
         <p className="mt-1 leading-relaxed text-ivory/50">
-          Changes are saved in this browser only and show on the site right away. A real backend comes after approval.
+          Changes are saved to the database and appear on the website for everyone right away.
         </p>
       </div>
       <Link href="/" className="flex items-center gap-2 border-t border-ivory/10 px-6 py-4 text-xs hover:text-ivory">
@@ -103,20 +103,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <Link href="/admin" aria-label="Roze Déco admin" className="lg:hidden">
             <Logo height={30} />
           </Link>
-          <span className="hidden rounded-full bg-warning/15 px-2.5 py-1 text-[11px] font-medium text-warning sm:inline">
-            Demo — saved in this browser
-          </span>
           <div className="ml-auto flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <span className="flex size-8 items-center justify-center rounded-full bg-accent-light font-serif text-sm text-accent-dark">RD</span>
+              <span className="flex size-8 items-center justify-center rounded-full bg-accent-light font-serif text-sm text-accent-dark uppercase">{admin.email?.[0] ?? "R"}</span>
               <div className="hidden text-xs sm:block">
                 <p className="font-medium">Roze Déco</p>
-                <p className="text-stone">Demo account</p>
+                <p className="text-stone">{admin.email}</p>
               </div>
             </div>
             <button
-              onClick={() => {
-                logout();
+              onClick={async () => {
+                await logout();
                 router.replace("/admin/login");
               }}
               className="flex items-center gap-1.5 rounded-md border border-sand px-3 py-1.5 text-xs text-taupe hover:border-ink hover:text-ink"

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { ChevronDown, Pencil, Plus, Search } from "lucide-react";
 import { PageHeader } from "./AdminShell";
+import { EmptyCatalogBanner } from "./EmptyCatalogBanner";
 import { QtyStepper } from "./QtyStepper";
 import { StockPill } from "./StatusBadge";
 import { SmartImage } from "@/components/SmartImage";
@@ -44,6 +45,7 @@ export function ProductsAdmin() {
         }
       />
 
+      <EmptyCatalogBanner />
       <div className="card-admin overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-sand/60 p-4 sm:flex-row">
           <div className="relative flex-1">

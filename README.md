@@ -27,19 +27,22 @@ npm run build
 
 Each product colour has a quantity. Quantity > 0 → **Ready now**. Quantity 0 → **Out of stock**, but still orderable with a warning that it needs about 2 weeks to be ready for shipment (`MADE_TO_ORDER_LEAD` in `src/lib/catalog.ts`).
 
-## Demo backend
+## Backend
 
-Admin login: **/admin/login** — username `demo`, password `roze2026` (shown under the login form). This is a browser-only check for the demo, not real security.
-
-
-The admin is fully working but **saves to the browser's localStorage** (`src/lib/store.ts`), so changes are visible only in the same browser. Uploaded images are resized and stored as data URLs (`src/lib/image.ts`).
-
-To go live, replace the functions in `store.ts` with API calls to a real backend (same data shapes) and move image uploads to proper storage. Use *Settings → Export data* to carry over anything the client entered.
+- **Database:** Firebase Firestore, project `rose-deco` (free Spark plan, Frankfurt). Collections: `products`, `orders`, `messages`.
+- **Admin login:** Firebase Authentication (email + password) at `/admin/login`. Only emails in `ADMIN_EMAILS` (`src/lib/firebase.ts`) **and** in `isAdmin()` in `firestore.rules` get access. Public sign-up is disabled; create admin users in Firebase console → Authentication → Users.
+- **Security rules:** `firestore.rules` (published in the console). Anyone can read products, place an order and send a message; only admins can read/manage orders, messages and products.
+- **Images:** uploaded from the admin to **Cloudinary** (free plan) — configure `CLOUDINARY` in `src/lib/image.ts`. Firestore stores only the image URL.
+- **Stock:** deducted when an order is moved out of “New” (confirmed), restored if a confirmed order is cancelled.
+- **Bag:** stays in each visitor’s browser (localStorage).
+- First run: log in and click **Import demo products** to load the 28 demo products.
 
 ## Where things live
 
 - `src/lib/brand.ts` — contact details & brand story
 - `src/lib/catalog.ts` — categories, product model, seed products, stock helpers
-- `src/lib/store.ts` — demo data layer (products, cart, orders, messages)
+- `src/lib/firebase.ts` — Firebase config, admin emails, demo account
+- `src/lib/store.ts` — data layer (Firestore + Auth hooks, cart)
+- `src/lib/image.ts` — image upload (Cloudinary)
 - `src/app/(site)/` — storefront · `src/app/admin/` — admin
 - `src/components/site/`, `src/components/admin/` — UI components
