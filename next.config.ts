@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Only nudge coding agents about security upgrades
+    agentUpgrade: "security",
+  },
   images: {
     // Demo photography (Unsplash) + product uploads (ImageKit)
     remotePatterns: [
