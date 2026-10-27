@@ -16,7 +16,8 @@
 ## Before going live
 - [x] Firebase Firestore database connected (products, orders, messages) + security rules
 - [x] Admin login with Firebase Authentication (public sign-up disabled)
-- [ ] Publish updated `firestore.rules` (demo email removed) and delete the demo@rozedeco.com user in Firebase Auth
+- [x] Publish updated `firestore.rules` (demo email removed) — deploy with `firebase deploy --only firestore:rules`
+- [ ] Delete the demo@rozedeco.com user in Firebase Auth (if it was created)
 - [ ] Make sure the rozedecohq@gmail.com admin user exists in Firebase Auth
 - [ ] Settings → Images → move product photos to ImageKit
 - [x] ImageKit connected (keys in `.env.local`; add the same env vars on the hosting platform)
