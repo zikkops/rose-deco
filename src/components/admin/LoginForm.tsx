@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { DEMO_ACCOUNT } from "@/lib/firebase";
 import { login, logout, useAdmin } from "@/lib/store";
 
 const friendly = (e: unknown) => {
@@ -100,6 +101,31 @@ export function LoginForm() {
             {busy ? "Signing in…" : "Log in"}
           </button>
         </form>
+
+        {DEMO_ACCOUNT.show && (
+          <div className="mt-6 rounded-lg border border-dashed border-stone/50 bg-linen/60 p-4">
+            <p className="flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
+              <KeyRound className="size-3.5" /> Demo access
+            </p>
+            <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+              <dt className="text-stone">Email</dt>
+              <dd className="font-mono break-all">{DEMO_ACCOUNT.email}</dd>
+              <dt className="text-stone">Password</dt>
+              <dd className="font-mono">{DEMO_ACCOUNT.password}</dd>
+            </dl>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail(DEMO_ACCOUNT.email);
+                setPassword(DEMO_ACCOUNT.password);
+                setError("");
+              }}
+              className="mt-3 text-xs underline underline-offset-4 hover:text-taupe"
+            >
+              Fill in demo details
+            </button>
+          </div>
+        )}
       </div>
       <Link href="/" className="mt-6 flex items-center gap-1.5 text-xs text-stone hover:text-ink">
         <ArrowLeft className="size-3.5" /> Back to the website

@@ -8,7 +8,7 @@ service cloud.firestore {
     // Keep this list in sync with ADMIN_EMAILS in src/lib/firebase.ts
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email in ['rozedecohq@gmail.com'];
+        && request.auth.token.email in ['rozedecohq@gmail.com', 'demo@rozedeco.com'];
     }
 
     // Catalogue: anyone can read, only admins can change it.

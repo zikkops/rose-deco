@@ -11,13 +11,14 @@
 - [x] Bag (cart drawer) + checkout (cash on delivery) → order appears in admin, stock is reserved
 - [x] Contact form → message appears in admin
 - [x] Admin (`/admin`): dashboard, products (add / edit / delete, images, colours, quantities, show/hide, featured, new), orders (status, details), messages, settings (images, backup)
-- [x] Demo login, demo import and hard-coded demo products removed — production setup
+- [x] Demo import and hard-coded demo products removed — production setup
+- [x] Demo admin login kept on purpose, shown under the login form (`demo@rozedeco.com` / `roze2026`)
 
 ## Before going live
 - [x] Firebase Firestore database connected (products, orders, messages) + security rules
 - [x] Admin login with Firebase Authentication (public sign-up disabled)
 - [x] Publish updated `firestore.rules` (demo email removed) — deploy with `firebase deploy --only firestore:rules`
-- [ ] Delete the demo@rozedeco.com user in Firebase Auth (if it was created)
+- [ ] Make sure the demo@rozedeco.com user exists in Firebase Auth with password roze2026
 - [ ] Make sure the rozedecohq@gmail.com admin user exists in Firebase Auth
 - [ ] Settings → Images → move product photos to ImageKit
 - [x] ImageKit connected (keys in `.env.local`; add the same env vars on the hosting platform)
