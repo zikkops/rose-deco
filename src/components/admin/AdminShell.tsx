@@ -34,7 +34,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
-  // Demo login gate
+  // Admin login gate
   const router = useRouter();
   const admin = useAdmin();
   const isLogin = pathname === "/admin/login";

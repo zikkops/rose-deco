@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Database, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { PageHeader } from "./AdminShell";
 import { MoveImagesToImageKit } from "./MoveImagesToImageKit";
 import { brand } from "@/lib/brand";
 import { MADE_TO_ORDER_LEAD } from "@/lib/catalog";
 import { imageUploadReady } from "@/lib/image";
-import { exportData, importDemoProducts, useOrders, useProductsState } from "@/lib/store";
+import { exportData, useOrders, useProductsState } from "@/lib/store";
 
 function Section({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
@@ -31,9 +30,6 @@ const Row = ({ label, value }: { label: string; value: string }) => (
 export function SettingsAdmin() {
   const { items: products, loaded } = useProductsState();
   const orders = useOrders();
-  const [confirmImport, setConfirmImport] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [busy, setBusy] = useState(false);
 
   return (
     <>
@@ -57,55 +53,24 @@ export function SettingsAdmin() {
         <Row label="Orders in database" value={String(orders.length)} />
       </Section>
 
-      <Section title="Images" desc="Copy product photos that are still linked from elsewhere (like the demo photos) into your ImageKit account, so all images live in one place.">
+      <Section title="Images" desc="Copy product photos that are linked from other websites into your ImageKit account, so all images live in one place.">
         <MoveImagesToImageKit />
       </Section>
 
-      <Section title="Data" desc="Load the demo catalogue to start from, or download a backup of everything.">
-        <div className="flex flex-wrap gap-2">
-          {confirmImport ? (
-            <>
-              <button
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await importDemoProducts();
-                    setMsg("28 demo products imported.");
-                  } catch {
-                    setMsg("Import failed — check you are logged in as an admin.");
-                  } finally {
-                    setBusy(false);
-                    setConfirmImport(false);
-                  }
-                }}
-                className="rounded-md bg-ink px-4 py-2 text-sm text-ivory disabled:opacity-60"
-              >
-                {busy ? "Importing…" : "Yes, import"}
-              </button>
-              <button onClick={() => setConfirmImport(false)} className="rounded-md border border-sand px-4 py-2 text-sm">Cancel</button>
-            </>
-          ) : (
-            <button onClick={() => setConfirmImport(true)} className="flex items-center gap-2 rounded-md border border-sand px-4 py-2 text-sm hover:border-ink">
-              <Database className="size-4" /> Import demo products
-            </button>
-          )}
-          <button
-            onClick={() => {
-              const blob = new Blob([exportData()], { type: "application/json" });
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(blob);
-              a.download = `roze-deco-backup-${new Date().toISOString().slice(0, 10)}.json`;
-              a.click();
-              URL.revokeObjectURL(a.href);
-            }}
-            className="flex items-center gap-2 rounded-md border border-sand px-4 py-2 text-sm hover:border-ink"
-          >
-            <Download className="size-4" /> Download backup (JSON)
-          </button>
-        </div>
-        {msg && <p className="text-sm">{msg}</p>}
-        <p className="text-xs text-stone">Importing re-adds the 28 demo products (it overwrites demo products with the same name, and doesn&apos;t touch products you created).</p>
+      <Section title="Backup" desc="Download a copy of all products, orders and messages.">
+        <button
+          onClick={() => {
+            const blob = new Blob([exportData()], { type: "application/json" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `roze-deco-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+          }}
+          className="flex items-center gap-2 rounded-md border border-sand px-4 py-2 text-sm hover:border-ink"
+        >
+          <Download className="size-4" /> Download backup (JSON)
+        </button>
       </Section>
     </>
   );

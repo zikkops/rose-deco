@@ -16,10 +16,9 @@ import {
   runTransaction,
   setDoc,
   updateDoc,
-  writeBatch,
 } from "firebase/firestore";
 import { auth, db, isAdminEmail } from "./firebase";
-import { seedProducts, type Product } from "./catalog";
+import type { Product } from "./catalog";
 
 type Listener = () => void;
 
@@ -204,12 +203,6 @@ export const setColorQuantity = (productId: string, colorId: string, quantity: n
   });
 };
 
-/** Admin: load the 28 demo products into Firestore (overwrites same ids). */
-export async function importDemoProducts() {
-  const batch = writeBatch(db);
-  seedProducts.forEach((p) => batch.set(doc(db, "products", p.id), p));
-  await batch.commit();
-}
 
 // ——— Cart (per visitor, localStorage)
 

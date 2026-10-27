@@ -48,7 +48,6 @@ export function Footer() {
               <li><Link href="/about" className="hover:text-ivory">Our Story</Link></li>
               <li><Link href="/about#craft" className="hover:text-ivory">Our Approach</Link></li>
               <li><Link href="/contact#faq" className="hover:text-ivory">FAQ</Link></li>
-              <li><Link href="/admin" className="hover:text-ivory">Admin (preview)</Link></li>
             </ul>
           </div>
           <div>

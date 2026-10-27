@@ -20,7 +20,7 @@ npm run build
 | `/categories` All categories + all products | `/admin/products/edit` — add (no id) / edit (`?id=`) |
 | `/categories/[slug]` Category with filters | `/admin/orders` |
 | `/product/[slug]` Product | `/admin/messages` |
-| `/contact` Contact Us | `/admin/settings` — export / reset demo data |
+| `/contact` Contact Us | `/admin/settings` — store info, move images to ImageKit, backup |
 | `/checkout` Checkout (cash on delivery) | |
 
 ## Stock rule
@@ -30,12 +30,12 @@ Each product colour has a quantity. Quantity > 0 → **Ready now**. Quantity 0 �
 ## Backend
 
 - **Database:** Firebase Firestore, project `rose-deco` (free Spark plan, Frankfurt). Collections: `products`, `orders`, `messages`.
-- **Admin login:** Firebase Authentication (email + password) at `/admin/login`. Only emails in `ADMIN_EMAILS` (`src/lib/firebase.ts`) **and** in `isAdmin()` in `firestore.rules` get access. Public sign-up is disabled; create admin users in Firebase console → Authentication → Users.
+- **Admin login:** Firebase Authentication (email + password) at `/admin/login` (not linked from the public site). Only emails in `ADMIN_EMAILS` (`src/lib/firebase.ts`) **and** in `isAdmin()` in `firestore.rules` get access — currently `rozedecohq@gmail.com`. Public sign-up is disabled; add admins in Firebase console → Authentication → Users, then add their email in both places.
 - **Security rules:** `firestore.rules` (published in the console). Anyone can read products, place an order and send a message; only admins can read/manage orders, messages and products.
 - **Images:** uploaded from the admin to **ImageKit** (free plan, no card). Set `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY` and `IMAGEKIT_PRIVATE_KEY` (see `.env.example`). Uploads are signed by `/api/upload-auth`, which only accepts logged-in admins. Firestore stores only the image URL.
 - **Stock:** deducted when an order is moved out of “New” (confirmed), restored if a confirmed order is cancelled.
 - **Bag:** stays in each visitor’s browser (localStorage).
-- First run: log in and click **Import demo products** to load the 28 demo products.
+- **Product pages** are prerendered at build time from the live `products` collection (`src/lib/server/products.ts`, cached hourly); products added later render on demand.
 
 ## Where things live
 
