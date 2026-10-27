@@ -25,6 +25,6 @@
 - [ ] Order notifications (email / WhatsApp) to the shop
 - [ ] Real product photos, names, prices and colours
 - [ ] Delivery fees & policy, returns policy
-- [ ] Upgrade Next.js (security advisory reported for 16.4.0)
+- [x] Upgrade Next.js 16.4.0 → 16.4.3 (security advisory)
 - [ ] SEO: sitemap, Open Graph images; analytics
 - [ ] Final mobile check on a real phone
