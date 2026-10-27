@@ -6,6 +6,10 @@ import { auth } from "./firebase";
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY ?? "";
 const FOLDER = "/roze-deco/products";
 
+// ImageKit file IDs of images uploaded in this browser session (url -> fileId), so they can be
+// deleted immediately, even before ImageKit's search index has picked them up.
+const uploadedFileIds = new Map<string, string>();
+
 export const imageUploadReady = () => !!PUBLIC_KEY;
 
 async function compress(file: File, maxSize = 1600, quality = 0.85): Promise<Blob> {
@@ -58,6 +62,7 @@ export async function uploadProductImage(file: File): Promise<string> {
   const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", { method: "POST", body });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.message ?? "Upload failed.");
+  uploadedFileIds.set(json.url, json.fileId);
   return json.url as string;
 }
 
@@ -75,4 +80,27 @@ export async function copyImageToImageKit(url: string, name: string): Promise<st
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error ?? "Copy failed.");
   return json.url as string;
+}
+
+/**
+ * Admin: delete images from ImageKit (best effort). Only ImageKit URLs are sent;
+ * pass only images that no other product still uses.
+ */
+export async function deleteHostedImages(urls: string[]): Promise<void> {
+  const hosted = [...new Set(urls.filter(isImageKitUrl))];
+  const user = auth.currentUser;
+  if (!hosted.length || !user) return;
+  try {
+    const res = await fetch("/api/delete-images", {
+      method: "POST",
+      headers: { authorization: `Bearer ${await user.getIdToken()}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        urls: hosted,
+        fileIds: Object.fromEntries(hosted.flatMap((u) => (uploadedFileIds.has(u) ? [[u, uploadedFileIds.get(u)!]] : []))),
+      }),
+    });
+    if (!res.ok) console.error("[images] delete failed", await res.text());
+  } catch (e) {
+    console.error("[images] delete failed", e);
+  }
 }

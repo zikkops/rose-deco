@@ -19,6 +19,7 @@ import {
 } from "firebase/firestore";
 import { auth, db, isAdminEmail } from "./firebase";
 import type { Product } from "./catalog";
+import { deleteHostedImages } from "./image";
 
 type Listener = () => void;
 
@@ -191,7 +192,19 @@ export const useActiveProducts = () => {
 export const useProduct = (idOrSlug: string) => useProducts().find((p) => p.id === idOrSlug || p.slug === idOrSlug);
 
 export const saveProduct = (product: Product) => setDoc(doc(db, "products", product.id), product);
-export const deleteProduct = (id: string) => deleteDoc(doc(db, "products", id));
+/** Images in `urls` that no product other than `productId` uses. */
+const unusedImages = (urls: string[], productId: string) =>
+  urls.filter((u) => !productsCol.get().items.some((p) => p.id !== productId && p.images.includes(u)));
+
+/** Admin: delete images from the image host unless another product still uses them. */
+export const releaseImages = (urls: string[], productId: string) => deleteHostedImages(unusedImages(urls, productId));
+
+/** Admin: delete the product, then its images on ImageKit (if no other product uses them). */
+export async function deleteProduct(id: string) {
+  const images = productsCol.get().items.find((p) => p.id === id)?.images ?? [];
+  await deleteDoc(doc(db, "products", id));
+  await releaseImages(images, id);
+}
 export const setProductActive = (id: string, active: boolean) => updateDoc(doc(db, "products", id), { active });
 
 export const setColorQuantity = (productId: string, colorId: string, quantity: number) => {

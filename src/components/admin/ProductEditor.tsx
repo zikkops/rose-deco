@@ -9,7 +9,7 @@ import { StockPill } from "./StatusBadge";
 import { SmartImage } from "@/components/SmartImage";
 import { categories, slugify, type ColorVariant, type Product } from "@/lib/catalog";
 import { imageUploadReady, uploadProductImage } from "@/lib/image";
-import { deleteProduct, saveProduct, uid, useProductsState } from "@/lib/store";
+import { deleteProduct, releaseImages, saveProduct, uid, useProductsState } from "@/lib/store";
 
 export function ProductEditor() {
   const id = useSearchParams().get("id");
@@ -50,6 +50,8 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
   const [toast, setToast] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Photos uploaded in this editing session — deleted from the host if removed before saving.
+  const uploaded = useRef<string[]>([]);
 
   const flash = (msg: string) => {
     setToast(msg);
@@ -63,6 +65,7 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
     try {
       for (const f of [...files]) {
         const url = await uploadProductImage(f);
+        uploaded.current.push(url);
         setImages((imgs) => [...imgs, url]);
       }
     } catch (e) {
@@ -124,6 +127,10 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
     setBusy(true);
     try {
       await saveProduct(product);
+      // Clean up photos that were removed (saved before, or uploaded in this session)
+      const removed = [...(initial?.images ?? []), ...uploaded.current].filter((u) => !images.includes(u));
+      uploaded.current = [];
+      void releaseImages(removed, product.id);
     } catch (err) {
       console.error(err);
       return setError("Could not save — check your connection and that you are logged in as an admin.");
@@ -309,7 +316,7 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
           {!isNew && (
             <section className="card-admin p-5">
               <h2 className="font-medium">Delete product</h2>
-              <p className="mt-1 text-xs text-stone">Removes it from the site. Tip: turn off “Show on website” to hide it temporarily instead.</p>
+              <p className="mt-1 text-xs text-stone">Removes it from the site and deletes its photos from image hosting (unless another product uses them). Tip: turn off “Show on website” to hide it temporarily instead.</p>
               {confirmDelete ? (
                 <div className="mt-3 flex gap-2">
                   <button
