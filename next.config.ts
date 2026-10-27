@@ -4,10 +4,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   images: {
-    // Demo photography (Unsplash) + product uploads (Cloudinary)
+    // Demo photography (Unsplash) + product uploads (ImageKit)
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/photo-*" },
-      { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
+      { protocol: "https", hostname: "ik.imagekit.io", pathname: "/**" },
     ],
   },
   turbopack: {

@@ -51,7 +51,7 @@ export function SettingsAdmin() {
       <Section title="Connections" desc="Where the website's data and images live.">
         <Row label="Database" value="Firebase Firestore (rose-deco)" />
         <Row label="Admin login" value="Firebase Authentication" />
-        <Row label="Image hosting" value={imageUploadReady() ? "Cloudinary — connected" : "Cloudinary — not connected yet"} />
+        <Row label="Image hosting" value={imageUploadReady() ? "ImageKit — connected" : "ImageKit — not connected yet"} />
         <Row label="Products in database" value={loaded ? String(products.length) : "…"} />
         <Row label="Orders in database" value={String(orders.length)} />
       </Section>

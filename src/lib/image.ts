@@ -1,13 +1,12 @@
-// Product images: resized in the browser, then uploaded to Cloudinary (free plan).
+// Product images: resized in the browser, uploaded to ImageKit (free plan, no card).
+// Uploads are signed by /api/upload-auth, which only accepts logged-in admins.
 // Firestore only stores the resulting image URL.
+import { auth } from "./firebase";
 
-export const CLOUDINARY = {
-  cloudName: "", // set once the Cloudinary account exists, e.g. "rozedeco"
-  uploadPreset: "roze_deco_products", // unsigned preset, restricted to images in this folder
-  folder: "roze-deco/products",
-};
+const PUBLIC_KEY = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY ?? "";
+const FOLDER = "/roze-deco/products";
 
-export const imageUploadReady = () => !!CLOUDINARY.cloudName;
+export const imageUploadReady = () => !!PUBLIC_KEY;
 
 async function compress(file: File, maxSize = 1600, quality = 0.85): Promise<Blob> {
   const url = URL.createObjectURL(file);
@@ -37,12 +36,27 @@ async function compress(file: File, maxSize = 1600, quality = 0.85): Promise<Blo
 /** Uploads one image and returns its public HTTPS URL. */
 export async function uploadProductImage(file: File): Promise<string> {
   if (!imageUploadReady()) throw new Error("Image hosting isn't connected yet — paste an image link for now.");
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please log in again.");
+
+  const authRes = await fetch("/api/upload-auth", {
+    method: "POST",
+    headers: { authorization: `Bearer ${await user.getIdToken()}` },
+  });
+  const sig = await authRes.json();
+  if (!authRes.ok) throw new Error(sig?.error ?? "Upload not allowed.");
+
   const body = new FormData();
   body.append("file", await compress(file));
-  body.append("upload_preset", CLOUDINARY.uploadPreset);
-  body.append("folder", CLOUDINARY.folder);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`, { method: "POST", body });
+  body.append("fileName", `${file.name.replace(/\.[^.]+$/, "").replace(/[^a-z0-9-]+/gi, "-").toLowerCase() || "image"}.jpg`);
+  body.append("folder", FOLDER);
+  body.append("publicKey", PUBLIC_KEY);
+  body.append("token", sig.token);
+  body.append("expire", String(sig.expire));
+  body.append("signature", sig.signature);
+
+  const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", { method: "POST", body });
   const json = await res.json();
-  if (!res.ok) throw new Error(json?.error?.message ?? "Upload failed.");
-  return json.secure_url as string;
+  if (!res.ok) throw new Error(json?.message ?? "Upload failed.");
+  return json.url as string;
 }

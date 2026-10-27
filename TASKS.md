@@ -18,7 +18,7 @@
 - [x] Admin login with Firebase Authentication (public sign-up disabled)
 - [ ] Create admin users in Firebase (rozedecohq@gmail.com + demo@rozedeco.com / roze2026)
 - [ ] Import demo products from the admin (first run)
-- [ ] Cloudinary account + unsigned upload preset → set `CLOUDINARY.cloudName` in `src/lib/image.ts`
+- [ ] ImageKit account (free) → put keys in `.env.local` and the hosting env vars (see `.env.example`)
 - [ ] Order notifications (email / WhatsApp) to the shop
 - [ ] Real product photos, names, prices and colours
 - [ ] Delivery fees & policy, returns policy

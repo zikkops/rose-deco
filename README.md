@@ -32,7 +32,7 @@ Each product colour has a quantity. Quantity > 0 → **Ready now**. Quantity 0 �
 - **Database:** Firebase Firestore, project `rose-deco` (free Spark plan, Frankfurt). Collections: `products`, `orders`, `messages`.
 - **Admin login:** Firebase Authentication (email + password) at `/admin/login`. Only emails in `ADMIN_EMAILS` (`src/lib/firebase.ts`) **and** in `isAdmin()` in `firestore.rules` get access. Public sign-up is disabled; create admin users in Firebase console → Authentication → Users.
 - **Security rules:** `firestore.rules` (published in the console). Anyone can read products, place an order and send a message; only admins can read/manage orders, messages and products.
-- **Images:** uploaded from the admin to **Cloudinary** (free plan) — configure `CLOUDINARY` in `src/lib/image.ts`. Firestore stores only the image URL.
+- **Images:** uploaded from the admin to **ImageKit** (free plan, no card). Set `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY` and `IMAGEKIT_PRIVATE_KEY` (see `.env.example`). Uploads are signed by `/api/upload-auth`, which only accepts logged-in admins. Firestore stores only the image URL.
 - **Stock:** deducted when an order is moved out of “New” (confirmed), restored if a confirmed order is cancelled.
 - **Bag:** stays in each visitor’s browser (localStorage).
 - First run: log in and click **Import demo products** to load the 28 demo products.
@@ -43,6 +43,6 @@ Each product colour has a quantity. Quantity > 0 → **Ready now**. Quantity 0 �
 - `src/lib/catalog.ts` — categories, product model, seed products, stock helpers
 - `src/lib/firebase.ts` — Firebase config, admin emails, demo account
 - `src/lib/store.ts` — data layer (Firestore + Auth hooks, cart)
-- `src/lib/image.ts` — image upload (Cloudinary)
+- `src/lib/image.ts` + `src/app/api/upload-auth/route.ts` — image upload (ImageKit)
 - `src/app/(site)/` — storefront · `src/app/admin/` — admin
 - `src/components/site/`, `src/components/admin/` — UI components

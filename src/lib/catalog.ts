@@ -515,4 +515,4 @@ export const slugify = (s: string) =>
 
 /** Remote images we can run through next/image optimisation. */
 export const canOptimize = (src: string) =>
-  src.startsWith("https://images.unsplash.com/") || src.startsWith("https://res.cloudinary.com/");
+  src.startsWith("https://images.unsplash.com/") || src.startsWith("https://ik.imagekit.io/");
