@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ExternalLink, ImagePlus, Link2, Plus, Trash2, X } from "lucide-react";
 import { QtyStepper } from "./QtyStepper";
 import { StockPill } from "./StatusBadge";
@@ -45,10 +45,24 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
   const [featured, setFeatured] = useState(initial?.featured ?? false);
   const [isNewTag, setIsNewTag] = useState(initial?.isNew ?? true);
   const [urlInput, setUrlInput] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false); // photo upload in progress
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Unsaved-changes tracking: compare the form with what was last saved
+  const snapshot = JSON.stringify({ name, category, price, description, details, dimensions, material, images, colors, active, featured, isNewTag });
+  const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
+  const dirty = snapshot !== savedSnapshot;
+
+  // Warn before closing / reloading the tab with unsaved changes
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const fileRef = useRef<HTMLInputElement>(null);
   // Photos uploaded in this editing session — deleted from the host if removed before saving.
   const uploaded = useRef<string[]>([]);
@@ -124,7 +138,7 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
       createdAt: initial?.createdAt ?? Date.now(),
     };
 
-    setBusy(true);
+    setSaving(true);
     try {
       await saveProduct(product);
       // Clean up photos that were removed (saved before, or uploaded in this session)
@@ -135,14 +149,15 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
       console.error(err);
       return setError("Could not save — check your connection and that you are logged in as an admin.");
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
+    setSavedSnapshot(snapshot);
     if (isNew) router.replace(`/admin/products/edit?id=${encodeURIComponent(product.id)}`);
     flash("Saved — live on the website");
   };
 
   return (
-    <form onSubmit={save}>
+    <form onSubmit={save} className="pb-28">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <Link href="/admin/products" className="rounded-md border border-sand bg-white p-2 hover:border-ink" aria-label="Back to products">
@@ -159,9 +174,6 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
               <ExternalLink className="size-3.5" /> View on site
             </Link>
           )}
-          <button type="submit" disabled={busy} className="rounded-md bg-ink px-5 py-2 text-sm text-ivory hover:bg-accent-dark disabled:opacity-50">
-            {isNew ? "Create product" : "Save changes"}
-          </button>
         </div>
       </div>
 
@@ -345,9 +357,41 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
         </div>
       </div>
 
+      {/* Floating save bar — always visible */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-sand/80 bg-white/95 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.15)] backdrop-blur lg:left-60">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-8">
+          <div className="min-w-0 text-sm">
+            {error ? (
+              <p className="truncate text-danger">{error}</p>
+            ) : dirty || isNew ? (
+              <p className="flex items-center gap-2 font-medium text-warning">
+                <span className="size-2 shrink-0 animate-pulse rounded-full bg-warning" />
+                {isNew ? "New product — not saved yet" : "Unsaved changes"}
+              </p>
+            ) : (
+              <p className="flex items-center gap-2 text-stone">
+                <span className="size-2 shrink-0 rounded-full bg-success" /> All changes saved
+              </p>
+            )}
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Link href="/admin/products" className="hidden rounded-md border border-sand px-4 py-2.5 text-sm hover:border-ink sm:block">
+              Back to products
+            </Link>
+            <button
+              type="submit"
+              disabled={saving || busy || (!dirty && !isNew)}
+              className="rounded-md bg-ink px-6 py-2.5 text-sm font-medium text-ivory hover:bg-accent-dark disabled:opacity-40"
+            >
+              {saving ? "Saving…" : busy ? "Uploading…" : isNew ? "Create product" : "Save changes"}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div
         role="status"
-        className={`fixed right-6 bottom-6 z-50 rounded-lg bg-ink px-5 py-3 text-sm text-ivory shadow-xl transition-all ${
+        className={`fixed right-6 bottom-24 z-50 rounded-lg bg-ink px-5 py-3 text-sm text-ivory shadow-xl transition-all ${
           toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
         }`}
       >
