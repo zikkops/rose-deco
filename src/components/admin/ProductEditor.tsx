@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, ExternalLink, ImagePlus, Link2, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, ImagePlus, Link2, Loader2, Plus, Trash2, X } from "lucide-react";
 import { QtyStepper } from "./QtyStepper";
 import { StockPill } from "./StatusBadge";
 import { SmartImage } from "@/components/SmartImage";
@@ -46,6 +46,8 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
   const [isNewTag, setIsNewTag] = useState(initial?.isNew ?? true);
   const [urlInput, setUrlInput] = useState("");
   const [busy, setBusy] = useState(false); // photo upload in progress
+  // Photos being uploaded: local preview + progress (0–1), shown as loading tiles
+  const [pending, setPending] = useState<{ id: string; preview: string; progress: number }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
@@ -74,20 +76,27 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
 
   const onFiles = async (files: FileList | null) => {
     if (!files?.length) return;
+    const queue = [...files].map((file) => ({ id: uid(), file, preview: URL.createObjectURL(file) }));
+    if (fileRef.current) fileRef.current.value = "";
+    setPending((p) => [...p, ...queue.map(({ id, preview }) => ({ id, preview, progress: 0 }))]);
     setBusy(true);
     setError("");
-    try {
-      for (const f of [...files]) {
-        const url = await uploadProductImage(f);
+    // One at a time, so photos keep the order they were picked in
+    for (const item of queue) {
+      try {
+        const url = await uploadProductImage(item.file, (progress) =>
+          setPending((p) => p.map((x) => (x.id === item.id ? { ...x, progress } : x))),
+        );
         uploaded.current.push(url);
         setImages((imgs) => [...imgs, url]);
+      } catch (e) {
+        setError(`${item.file.name}: ${e instanceof Error ? e.message : "Upload failed."}`);
+      } finally {
+        setPending((p) => p.filter((x) => x.id !== item.id));
+        URL.revokeObjectURL(item.preview);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed.");
-    } finally {
-      setBusy(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
+    setBusy(false);
   };
 
   const move = (i: number, d: -1 | 1) =>
@@ -229,6 +238,21 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
                     <button type="button" onClick={() => setImages(images.filter((_, j) => j !== i))} className="rounded-full bg-white/90 p-1" aria-label="Remove image">
                       <X className="size-3" />
                     </button>
+                  </div>
+                </div>
+              ))}
+              {pending.map((p) => (
+                <div key={p.id} className="relative aspect-square overflow-hidden rounded-lg bg-linen" aria-busy="true" aria-label="Uploading photo">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- local preview (blob: URL) */}
+                  <img src={p.preview} alt="" className="size-full scale-105 object-cover opacity-60 blur-[2px]" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-white/40">
+                    <Loader2 className="size-6 animate-spin text-ink" strokeWidth={1.75} />
+                    <span className="text-[11px] font-medium tabular-nums">
+                      {p.progress > 0 ? `${Math.round(p.progress * 100)}%` : "Waiting…"}
+                    </span>
+                  </div>
+                  <div className="absolute inset-x-2 bottom-2 h-1 overflow-hidden rounded-full bg-white/80">
+                    <div className="h-full rounded-full bg-ink transition-[width] duration-200" style={{ width: `${Math.round(p.progress * 100)}%` }} />
                   </div>
                 </div>
               ))}
