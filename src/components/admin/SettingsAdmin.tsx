@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Database, Download } from "lucide-react";
 import { PageHeader } from "./AdminShell";
+import { MoveImagesToImageKit } from "./MoveImagesToImageKit";
 import { brand } from "@/lib/brand";
 import { MADE_TO_ORDER_LEAD } from "@/lib/catalog";
 import { imageUploadReady } from "@/lib/image";
@@ -54,6 +55,10 @@ export function SettingsAdmin() {
         <Row label="Image hosting" value={imageUploadReady() ? "ImageKit — connected" : "ImageKit — not connected yet"} />
         <Row label="Products in database" value={loaded ? String(products.length) : "…"} />
         <Row label="Orders in database" value={String(orders.length)} />
+      </Section>
+
+      <Section title="Images" desc="Copy product photos that are still linked from elsewhere (like the demo photos) into your ImageKit account, so all images live in one place.">
+        <MoveImagesToImageKit />
       </Section>
 
       <Section title="Data" desc="Load the demo catalogue to start from, or download a backup of everything.">

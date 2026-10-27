@@ -60,3 +60,19 @@ export async function uploadProductImage(file: File): Promise<string> {
   if (!res.ok) throw new Error(json?.message ?? "Upload failed.");
   return json.url as string;
 }
+
+export const isImageKitUrl = (url: string) => url.startsWith("https://ik.imagekit.io/");
+
+/** Admin: copy an image from any public URL into ImageKit; returns the new ImageKit URL. */
+export async function copyImageToImageKit(url: string, name: string): Promise<string> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please log in again.");
+  const res = await fetch("/api/import-image", {
+    method: "POST",
+    headers: { authorization: `Bearer ${await user.getIdToken()}`, "content-type": "application/json" },
+    body: JSON.stringify({ url, name }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error ?? "Copy failed.");
+  return json.url as string;
+}
