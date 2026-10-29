@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, ExternalLink, ImagePlus, Link2, Loader2, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, ImagePlus, Link2, Loader2, Plus, Search, Trash2, X } from "lucide-react";
 import { QtyStepper } from "./QtyStepper";
 import { StockPill } from "./StatusBadge";
 import { SmartImage } from "@/components/SmartImage";
@@ -12,6 +12,7 @@ import {
   categories,
   formatPrice,
   formatSize,
+  getCategory,
   isBundle,
   slugify,
   type BundlePiece,
@@ -325,28 +326,28 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
             <Toggle label="This product is a set of other products" checked={isSet} onChange={setIsSet} />
             {isSet && (
               <div className="space-y-2">
-                {pieces.map((b, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-lg border border-sand/70 p-2">
-                    <select
-                      className="input-admin min-w-0 flex-1"
-                      value={b.productId}
-                      onChange={(e) => setPieces(pieces.map((x, j) => (j === i ? { ...x, productId: e.target.value } : x)))}
-                      aria-label="Product in this set"
-                    >
-                      <option value="">Choose a product…</option>
-                      {singles.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                    <QtyStepper value={b.qty} onChange={(v) => setPieces(pieces.map((x, j) => (j === i ? { ...x, qty: Math.max(1, v) } : x)))} label="pieces" />
-                    <button type="button" onClick={() => setPieces(pieces.filter((_, j) => j !== i))} className="p-2 text-stone hover:text-danger" aria-label="Remove piece">
-                      <Trash2 className="size-4" />
-                    </button>
-                  </div>
-                ))}
-                <button type="button" onClick={() => setPieces([...pieces, { productId: "", qty: pieces.length ? 1 : 2 }])} className="flex items-center gap-1 text-xs underline-offset-4 hover:underline">
-                  <Plus className="size-3.5" /> Add a piece
-                </button>
+                {pieces.map((b, i) => {
+                  const p = singles.find((x) => x.id === b.productId);
+                  return (
+                    <div key={b.productId + i} className="flex items-center gap-2 rounded-lg border border-sand/70 p-2">
+                      <div className="relative size-10 shrink-0 overflow-hidden rounded-md bg-linen">
+                        {p?.images[0] && <SmartImage src={p.images[0]} alt="" fill sizes="40px" className="object-cover" />}
+                      </div>
+                      <div className="min-w-0 flex-1 text-sm">
+                        <p className="truncate">{p?.name ?? "Product no longer exists"}</p>
+                        {p && <p className="text-xs text-stone">{formatPrice(p.price)} each</p>}
+                      </div>
+                      <QtyStepper value={b.qty} onChange={(v) => setPieces(pieces.map((x, j) => (j === i ? { ...x, qty: Math.max(1, v) } : x)))} label={`${p?.name ?? "piece"} count`} />
+                      <button type="button" onClick={() => setPieces(pieces.filter((_, j) => j !== i))} className="p-2 text-stone hover:text-danger" aria-label="Remove piece">
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+                <PieceSearch
+                  products={singles.filter((p) => !pieces.some((b) => b.productId === p.id))}
+                  onPick={(p) => setPieces([...pieces, { productId: p.id, qty: pieces.length ? 1 : 2 }])}
+                />
                 {separatePrice > 0 && (
                   <p className="text-xs text-stone">
                     Bought separately: {formatPrice(separatePrice)}
@@ -602,6 +603,68 @@ function EditorForm({ initial, existing }: { initial?: Product; existing: Produc
         {toast}
       </div>
     </form>
+  );
+}
+
+const MIN_SEARCH = 3;
+const fold = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+/** Search box for adding pieces to a set — only searches once 3+ letters are typed. */
+function PieceSearch({ products, onPick }: { products: Product[]; onPick: (p: Product) => void }) {
+  const [q, setQ] = useState("");
+  const term = fold(q.trim());
+  const searching = term.length >= MIN_SEARCH;
+  const results = searching
+    ? products
+        .filter((p) => fold(`${p.name} ${getCategory(p.category)?.name ?? ""} ${p.material}`).includes(term))
+        .slice(0, 8)
+    : [];
+  const pick = (p: Product) => {
+    onPick(p);
+    setQ("");
+  };
+
+  return (
+    <div>
+      <div className="relative">
+        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone" />
+        <input
+          className="input-admin pl-9"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault(); // don't submit the form
+              if (results[0]) pick(results[0]);
+            } else if (e.key === "Escape") setQ("");
+          }}
+          placeholder="Search products to add to the set…"
+          aria-label="Search products to add to the set"
+        />
+      </div>
+      {term.length > 0 && !searching && (
+        <p className="mt-1.5 text-xs text-stone">Type at least {MIN_SEARCH} letters to search.</p>
+      )}
+      {searching && (
+        <ul className="mt-1.5 divide-y divide-sand/50 overflow-hidden rounded-lg border border-sand/70 bg-white">
+          {results.map((p) => (
+            <li key={p.id}>
+              <button type="button" onClick={() => pick(p)} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-linen/50">
+                <span className="relative size-9 shrink-0 overflow-hidden rounded-md bg-linen">
+                  {p.images[0] && <SmartImage src={p.images[0]} alt="" fill sizes="36px" className="object-cover" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{p.name}</span>
+                  <span className="block text-xs text-stone">{getCategory(p.category)?.name} · {formatPrice(p.price)}</span>
+                </span>
+                <Plus className="size-4 shrink-0 text-stone" />
+              </button>
+            </li>
+          ))}
+          {results.length === 0 && <li className="px-3 py-2.5 text-sm text-stone">No products match “{q.trim()}”.</li>}
+        </ul>
+      )}
+    </div>
   );
 }
 
