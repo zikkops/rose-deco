@@ -6,14 +6,15 @@ import { Clock, Minus, Plus, Truck } from "lucide-react";
 import { SmartImage } from "@/components/SmartImage";
 import { ProductCard } from "./ProductCard";
 import { StockTag } from "./StockTag";
-import { MADE_TO_ORDER_LEAD, formatPrice, getCategory } from "@/lib/catalog";
+import { MADE_TO_ORDER_LEAD, bundleLabel, colorImage, formatPrice, formatSize, getCategory, isBundle } from "@/lib/catalog";
 import { addToCart, setCartOpen, useActiveProducts, useProduct, useProductsState } from "@/lib/store";
 import { ProductSkeleton } from "./Skeletons";
 
 export function ProductView({ slug }: { slug: string }) {
   const product = useProduct(slug);
   const all = useActiveProducts();
-  const [active, setActive] = useState(0);
+  // Picked photo; until then, the photo of the selected colour
+  const [active, setActive] = useState<number | null>(null);
   const [colorId, setColorId] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<"details" | "dimensions">("details");
@@ -35,7 +36,16 @@ export function ProductView({ slug }: { slug: string }) {
   const category = getCategory(product.category);
   const color = product.colors.find((c) => c.id === colorId) ?? product.colors[0];
   const ready = !!color && color.quantity >= qty;
-  const image = product.images[Math.min(active, product.images.length - 1)];
+  const shown = active ?? Math.max(0, product.images.indexOf(colorImage(product, color)));
+  const image = product.images[Math.min(shown, product.images.length - 1)];
+  const size = formatSize(product.size);
+  // Sets: the pieces in this one, or the sets this piece is part of
+  const setPieces = (product.bundle ?? []).flatMap((b) => {
+    const p = all.find((x) => x.id === b.productId);
+    return p ? [{ p, qty: b.qty }] : [];
+  });
+  const separatePrice = setPieces.reduce((s, x) => s + x.p.price * x.qty, 0);
+  const sets = all.filter((p) => p.bundle?.some((b) => b.productId === product.id));
   const related = all.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
 
   return (
@@ -68,7 +78,7 @@ export function ProductView({ slug }: { slug: string }) {
                     key={src + i}
                     onClick={() => setActive(i)}
                     className={`relative aspect-square w-20 overflow-hidden bg-linen transition sm:w-24 ${
-                      active === i ? "ring-1 ring-ink ring-offset-2 ring-offset-ivory" : "opacity-70 hover:opacity-100"
+                      shown === i ? "ring-1 ring-ink ring-offset-2 ring-offset-ivory" : "opacity-70 hover:opacity-100"
                     }`}
                   >
                     <SmartImage src={src} alt="" fill sizes="96px" className="object-cover" />
@@ -83,9 +93,34 @@ export function ProductView({ slug }: { slug: string }) {
             <div className="lg:sticky lg:top-28">
               <p className="eyebrow">{category?.name}</p>
               <h1 className="mt-3 font-serif text-4xl leading-tight font-light lg:text-5xl">{product.name}</h1>
-              <p className="mt-5 text-2xl">{formatPrice(product.price)}</p>
+              <p className="mt-5 text-2xl">
+                {formatPrice(product.price)}
+                {separatePrice > product.price && (
+                  <span className="ml-3 text-base text-stone line-through">{formatPrice(separatePrice)}</span>
+                )}
+              </p>
+              {size && <p className="mt-2 text-sm text-stone">{size}</p>}
 
               <p className="mt-6 leading-relaxed text-taupe">{product.description}</p>
+
+              {isBundle(product) && setPieces.length > 0 && (
+                <div className="mt-6 border border-sand p-4">
+                  <p className="text-xs tracking-[0.2em] uppercase">{bundleLabel(product)} — includes</p>
+                  <ul className="mt-3 space-y-2">
+                    {setPieces.map(({ p, qty }) => (
+                      <li key={p.id}>
+                        <Link href={`/product/${p.slug}`} className="flex items-center gap-3 text-sm hover:underline">
+                          <span className="relative size-12 shrink-0 overflow-hidden bg-linen">
+                            <SmartImage src={p.images[0]} alt="" fill sizes="48px" className="object-cover" />
+                          </span>
+                          <span className="flex-1">{qty} × {p.name}</span>
+                          <span className="text-stone">{formatPrice(p.price)} each</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {color && (
                 <div className="mt-8">
@@ -100,6 +135,7 @@ export function ProductView({ slug }: { slug: string }) {
                         aria-label={c.name}
                         onClick={() => {
                           setColorId(c.id);
+                          setActive(null); // show this colour's photo
                           setQty(1);
                         }}
                         className={`relative size-9 rounded-full border border-ink/10 transition ${
@@ -158,6 +194,23 @@ export function ProductView({ slug }: { slug: string }) {
                 </button>
               </div>
 
+              {sets.length > 0 && (
+                <div className="mt-6 space-y-2">
+                  {sets.map((s) => (
+                    <Link key={s.id} href={`/product/${s.slug}`} className="flex items-center gap-3 border border-sand p-3 text-sm transition hover:border-ink">
+                      <span className="relative size-12 shrink-0 overflow-hidden bg-linen">
+                        <SmartImage src={s.images[0]} alt="" fill sizes="48px" className="object-cover" />
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-xs tracking-[0.2em] text-stone uppercase">Also sold as a {bundleLabel(s).toLowerCase()}</span>
+                        {s.name}
+                      </span>
+                      <span>{formatPrice(s.price)}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-8 flex items-center gap-3 border-y border-sand py-4 text-xs text-taupe">
                 <Truck className="size-5 text-accent" strokeWidth={1.2} />
                 Designed &amp; produced in Lebanon · Cash on delivery
@@ -180,7 +233,11 @@ export function ProductView({ slug }: { slug: string }) {
                       {product.material && <li className="flex gap-3"><span>—</span>Material: {product.material}</li>}
                     </ul>
                   ) : (
-                    <p>{product.dimensions || "Contact us for dimensions."}</p>
+                    <div className="space-y-1">
+                      {size && <p className="text-ink">{size}</p>}
+                      {product.dimensions && <p>{product.dimensions}</p>}
+                      {!size && !product.dimensions && <p>Contact us for dimensions.</p>}
+                    </div>
                   )}
                 </div>
               </div>

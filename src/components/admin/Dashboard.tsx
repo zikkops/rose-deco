@@ -7,7 +7,7 @@ import { EmptyCatalogBanner } from "./EmptyCatalogBanner";
 import { QtyStepper } from "./QtyStepper";
 import { StatusBadge, StockPill } from "./StatusBadge";
 import { SmartImage } from "@/components/SmartImage";
-import { formatPrice, isReadyNow } from "@/lib/catalog";
+import { formatPrice, isBundle, isReadyNow } from "@/lib/catalog";
 import { setColorQuantity, useMessages, useOrders, useProducts } from "@/lib/store";
 
 export function Dashboard() {
@@ -19,7 +19,11 @@ export function Dashboard() {
   const ready = live.filter(isReadyNow).length;
   const openOrders = orders.filter((o) => !["Delivered", "Cancelled"].includes(o.status));
   const revenue = orders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
-  const outColors = products.flatMap((p) => p.colors.filter((c) => c.quantity === 0).map((c) => ({ p, c }))).slice(0, 8);
+  // Sets are left out: they restock with their pieces
+  const outColors = products
+    .filter((p) => !isBundle(p))
+    .flatMap((p) => p.colors.filter((c) => c.quantity === 0).map((c) => ({ p, c })))
+    .slice(0, 8);
 
   const kpis = [
     { label: "Products on site", value: live.length },

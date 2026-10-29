@@ -2,7 +2,7 @@
 // Web config values are public identifiers — access is controlled by firestore.rules.
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
-import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import { connectFirestoreEmulator, getFirestore, initializeFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBOdq0HFbfm8uwFaDtDZQr1myPiuidBF0I",
@@ -14,7 +14,14 @@ const firebaseConfig = {
 };
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+// Optional fields (colour photo, size, bundle…) are simply left out when empty.
+let firestore: Firestore;
+try {
+  firestore = initializeFirestore(app, { ignoreUndefinedProperties: true });
+} catch {
+  firestore = getFirestore(app); // already initialised (hot reload)
+}
+export const db = firestore;
 export const auth = getAuth(app);
 
 // Local testing only: `NEXT_PUBLIC_USE_FIREBASE_EMULATORS=1 npm run dev` with `firebase emulators:start`.

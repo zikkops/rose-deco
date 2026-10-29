@@ -27,6 +27,12 @@ npm run build
 
 Each product colour has a quantity. Quantity > 0 → **Ready now**. Quantity 0 → **Out of stock**, but still orderable with a warning that it needs about 2 weeks to be ready for shipment (`MADE_TO_ORDER_LEAD` in `src/lib/catalog.ts`).
 
+## Colour photos, sizes and sets
+
+- **Colour photos:** each colour can point at one of the product's photos (`ColorVariant.image`). Choosing the colour on the product page shows that photo; the bag, checkout and order use it too.
+- **Size:** `Product.size` — width × height × depth, or diameter × height for round pieces, in cm or m (`formatSize`). `dimensions` holds optional extra size notes.
+- **Sets / bundles:** a product with `bundle: [{ productId, qty }]` (e.g. 2 × a side table) is sold as one item in its own category, next to the singles. Its colours are the colour names all pieces share, and its stock is how many full sets the pieces' stock makes (`bundleColors` in `src/lib/catalog.ts`). Orders store the pieces (`OrderItem.parts`), and confirming an order takes the stock from the single products.
+
 ## Backend
 
 - **Database:** Firebase Firestore, project `rose-deco` (free Spark plan, Frankfurt). Collections: `products`, `orders`, `messages`.

@@ -135,6 +135,9 @@ export function OrdersAdmin() {
                             <span className="size-2.5 rounded-full border border-ink/10" style={{ backgroundColor: i.colorHex }} />
                             {i.colorName} · Qty {i.qty}
                           </p>
+                          {i.parts?.length ? (
+                            <p className="text-xs text-stone">Set of {i.parts.map((p) => `${p.qty} × ${p.name}`).join(" + ")}</p>
+                          ) : null}
                           {!i.readyNow && (
                             <p className="mt-0.5 flex items-center gap-1 text-xs text-warning"><Clock className="size-3" /> Out of stock when ordered — ~2 weeks</p>
                           )}

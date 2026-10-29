@@ -18,7 +18,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { auth, db, isAdminEmail } from "./firebase";
-import type { Product } from "./catalog";
+import { bundleParts, colorImage, resolveProduct, type BundlePart, type Product } from "./catalog";
 import { deleteHostedImages } from "./image";
 
 type Listener = () => void;
@@ -41,6 +41,8 @@ export type OrderItem = {
   image: string;
   /** false = was out of stock when ordered, needs ~2 weeks */
   readyNow: boolean;
+  /** Bundles only: the pieces one set is made of (stock is taken from these) */
+  parts?: BundlePart[];
 };
 
 export type Customer = { name: string; phone: string; email: string; city: string; address: string; notes: string };
@@ -127,7 +129,12 @@ export const logout = () => signOut(auth);
 
 type CollectionState<T> = { items: T[]; loaded: boolean; error: string | null };
 
-function liveCollection<T extends { id: string }>(name: string, sortField: string, adminOnly: boolean) {
+function liveCollection<T extends { id: string }>(
+  name: string,
+  sortField: string,
+  adminOnly: boolean,
+  transform: (items: T[]) => T[] = (items) => items,
+) {
   const EMPTY: CollectionState<T> = { items: [], loaded: false, error: null };
   const state = createState<CollectionState<T>>(EMPTY, EMPTY);
   let stop: (() => void) | null = null;
@@ -138,7 +145,8 @@ function liveCollection<T extends { id: string }>(name: string, sortField: strin
     if (stop || users === 0 || !allowed) return;
     stop = onSnapshot(
       query(collection(db, name), orderBy(sortField, "desc")),
-      (snap) => state.set({ items: snap.docs.map((d) => ({ ...(d.data() as T), id: d.id })), loaded: true, error: null }),
+      (snap) =>
+        state.set({ items: transform(snap.docs.map((d) => ({ ...(d.data() as T), id: d.id }))), loaded: true, error: null }),
       (err) => {
         console.error(`[firestore:${name}]`, err);
         stop = null;
@@ -176,7 +184,8 @@ function liveCollection<T extends { id: string }>(name: string, sortField: strin
   return { get: state.get, use: () => useSyncExternalStore(subscribe, state.get, state.server) };
 }
 
-const productsCol = liveCollection<Product>("products", "createdAt", false);
+// Bundles get their colours & stock from their pieces (see resolveProduct)
+const productsCol = liveCollection<Product>("products", "createdAt", false, (all) => all.map((p) => resolveProduct(p, all)));
 const ordersCol = liveCollection<Order>("orders", "createdAt", true);
 const messagesCol = liveCollection<Message>("messages", "createdAt", true);
 
@@ -309,9 +318,11 @@ export async function placeOrder(customer: Customer): Promise<Order> {
     const p = products.find((x) => x.id === l.productId);
     const col = p?.colors.find((x) => x.id === l.colorId);
     if (!p || !col) return [];
+    const parts = p.bundle?.length ? bundleParts(p, col.id, products) : undefined;
     return [{
       productId: p.id, colorId: col.id, name: p.name, colorName: col.name, colorHex: col.hex,
-      price: p.price, qty: l.qty, image: p.images[0] ?? "", readyNow: col.quantity >= l.qty,
+      price: p.price, qty: l.qty, image: colorImage(p, col) ?? "", readyNow: col.quantity >= l.qty,
+      ...(parts?.length ? { parts } : {}),
     }];
   });
   if (items.length === 0) throw new Error("Your bag is empty.");
@@ -346,13 +357,19 @@ export async function updateOrderStatus(id: string, status: OrderStatus) {
     const restore = order.stockApplied && status === "Cancelled";
 
     if (deduct || restore) {
-      const ids = [...new Set(order.items.map((i) => i.productId))];
+      // Bundles take stock from their pieces
+      const usage = order.items.flatMap((i) =>
+        i.parts?.length
+          ? i.parts.map((part) => ({ productId: part.productId, colorId: part.colorId, qty: part.qty * i.qty }))
+          : [{ productId: i.productId, colorId: i.colorId, qty: i.qty }],
+      );
+      const ids = [...new Set(usage.map((u) => u.productId))];
       const docs = await Promise.all(ids.map((pid) => tx.get(doc(db, "products", pid))));
       docs.forEach((d) => {
         if (!d.exists()) return;
         const p = d.data() as Product;
         const colors = p.colors.map((c) => {
-          const used = order.items.filter((i) => i.productId === d.id && i.colorId === c.id).reduce((s, i) => s + i.qty, 0);
+          const used = usage.filter((u) => u.productId === d.id && u.colorId === c.id).reduce((s, u) => s + u.qty, 0);
           return used ? { ...c, quantity: Math.max(0, c.quantity + (deduct ? -used : used)) } : c;
         });
         tx.update(d.ref, { colors });

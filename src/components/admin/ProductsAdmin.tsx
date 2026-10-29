@@ -8,7 +8,7 @@ import { EmptyCatalogBanner } from "./EmptyCatalogBanner";
 import { QtyStepper } from "./QtyStepper";
 import { StockPill } from "./StatusBadge";
 import { SmartImage } from "@/components/SmartImage";
-import { categories, formatPrice, getCategory, isReadyNow, totalStock } from "@/lib/catalog";
+import { bundleLabel, categories, formatPrice, getCategory, isBundle, isReadyNow, totalStock } from "@/lib/catalog";
 import { setColorQuantity, setProductActive, useProducts } from "@/lib/store";
 
 export function ProductsAdmin() {
@@ -90,7 +90,10 @@ export function ProductsAdmin() {
                             <SmartImage src={p.images[0]} alt="" fill sizes="44px" className="object-cover" />
                           </div>
                           <div>
-                            <p className="font-medium hover:underline">{p.name}</p>
+                            <p className="font-medium hover:underline">
+                              {p.name}
+                              {isBundle(p) && <span className="ml-2 rounded bg-ink px-1.5 py-0.5 align-middle text-[10px] font-normal text-ivory">{bundleLabel(p)}</span>}
+                            </p>
                             <div className="mt-1 flex gap-1">
                               {p.colors.map((c) => (
                                 <span key={c.id} title={`${c.name}: ${c.quantity}`} className="size-2.5 rounded-full border border-ink/10" style={{ backgroundColor: c.hex }} />
@@ -104,7 +107,7 @@ export function ProductsAdmin() {
                       <td className="px-4 py-3">
                         <button onClick={() => setOpenId(open ? null : p.id)} className="flex items-center gap-2" aria-expanded={open}>
                           <StockPill ready={isReadyNow(p)} />
-                          <span className="text-xs text-stone tabular-nums">{totalStock(p)} pcs</span>
+                          <span className="text-xs text-stone tabular-nums">{totalStock(p)} {isBundle(p) ? "sets" : "pcs"}</span>
                           <ChevronDown className={`size-3.5 text-stone transition-transform ${open ? "rotate-180" : ""}`} />
                         </button>
                       </td>
@@ -129,11 +132,16 @@ export function ProductsAdmin() {
                               <div key={c.id} className="flex items-center gap-3 rounded-lg border border-sand bg-white px-3 py-2">
                                 <span className="size-4 rounded-full border border-ink/10" style={{ backgroundColor: c.hex }} />
                                 <span className="text-sm">{c.name}</span>
-                                <QtyStepper value={c.quantity} onChange={(v) => setColorQuantity(p.id, c.id, v)} label={`${c.name} quantity`} />
+                                {isBundle(p) ? (
+                                  <span className="text-xs text-stone tabular-nums">{c.quantity} {c.quantity === 1 ? "set" : "sets"}</span>
+                                ) : (
+                                  <QtyStepper value={c.quantity} onChange={(v) => setColorQuantity(p.id, c.id, v)} label={`${c.name} quantity`} />
+                                )}
                                 <StockPill ready={c.quantity > 0} />
                               </div>
                             ))}
                             {p.colors.length === 0 && <p className="text-sm text-stone">No colours yet — add them in Edit.</p>}
+                            {isBundle(p) && <p className="w-full text-xs text-stone">A set&apos;s stock comes from its pieces — restock the single products.</p>}
                           </div>
                         </td>
                       </tr>

@@ -16,7 +16,20 @@ export type ColorVariant = {
   name: string;
   hex: string;
   quantity: number;
+  /** Photo shown when this colour is picked (one of the product's images). */
+  image?: string;
 };
+
+export type SizeUnit = "cm" | "m";
+
+/** Measurements. Round pieces use `diameter` instead of width/depth. */
+export type Size = { unit: SizeUnit; width?: number; height?: number; depth?: number; diameter?: number };
+
+/** One piece in a bundle: `qty` of another product (e.g. 2 × Single side table). */
+export type BundlePiece = { productId: string; qty: number };
+
+/** A piece of a bundle in an order, for one set: which product/colour leaves stock. */
+export type BundlePart = { productId: string; colorId: string; qty: number; name: string };
 
 export type Product = {
   id: string;
@@ -26,7 +39,11 @@ export type Product = {
   price: number;
   description: string;
   details: string[];
+  /** Extra size notes (free text), shown under the measurements */
   dimensions: string;
+  size?: Size;
+  /** Set when this product is a bundle of other products — its colours & stock come from them. */
+  bundle?: BundlePiece[];
   material: string;
   images: string[];
   colors: ColorVariant[];
@@ -113,6 +130,68 @@ export const formatPrice = (n: number) =>
 export const totalStock = (p: Product) => p.colors.reduce((s, c) => s + c.quantity, 0);
 export const isReadyNow = (p: Product) => p.colors.some((c) => c.quantity > 0);
 export const colorReady = (c: ColorVariant) => c.quantity > 0;
+
+// ——— Colour photos
+/** The photo for a colour, falling back to the cover. */
+export const colorImage = (p: Product, c?: ColorVariant) =>
+  c?.image && p.images.includes(c.image) ? c.image : p.images[0];
+
+// ——— Sizes
+const num = (v: number) => String(+v.toFixed(2));
+
+/** "W 45 × H 50 × D 40 cm", "Ø 45 × H 40 cm" or "" */
+export function formatSize(s?: Size): string {
+  if (!s) return "";
+  const parts: [string, number | undefined][] = s.diameter
+    ? [["Ø", s.diameter], ["H", s.height]]
+    : [["W", s.width], ["H", s.height], ["D", s.depth]];
+  const shown = parts.filter(([, v]) => typeof v === "number" && v > 0).map(([label, v]) => `${label} ${num(v!)}`);
+  return shown.length ? `${shown.join(" × ")} ${s.unit}` : "";
+}
+
+// ——— Bundles (sets): colours & stock come from the pieces
+export const isBundle = (p: Product) => !!p.bundle?.length;
+const colorKey = (name: string) => name.trim().toLowerCase();
+
+/**
+ * A bundle's colours are the colour names all its pieces share; the stock of each
+ * is how many complete sets the pieces' stock can make.
+ */
+export function bundleColors(p: Pick<Product, "bundle" | "colors">, all: Product[]): ColorVariant[] {
+  const pieces = (p.bundle ?? []).map((b) => ({ b, product: all.find((x) => x.id === b.productId && !isBundle(x)) }));
+  if (!pieces.length || pieces.some((x) => !x.product || x.b.qty < 1)) return [];
+  const [first, ...rest] = pieces;
+  return first.product!.colors
+    .filter((c) => rest.every((x) => x.product!.colors.some((o) => colorKey(o.name) === colorKey(c.name))))
+    .map((c) => {
+      const quantity = Math.min(
+        ...pieces.map(({ b, product }) =>
+          Math.floor((product!.colors.find((o) => colorKey(o.name) === colorKey(c.name))?.quantity ?? 0) / b.qty),
+        ),
+      );
+      const own = p.colors.find((o) => o.id === c.id);
+      return { id: c.id, name: c.name, hex: c.hex, quantity, ...(own?.image ? { image: own.image } : {}) };
+    });
+}
+
+/** Live view of a product: bundles get their colours & stock from their pieces. */
+export const resolveProduct = (p: Product, all: Product[]): Product =>
+  isBundle(p) ? { ...p, colors: bundleColors(p, all) } : p;
+
+/** What one set of `bundle` in colour `colorId` takes out of stock. */
+export function bundleParts(bundle: Product, colorId: string, all: Product[]): BundlePart[] {
+  const name = bundle.colors.find((c) => c.id === colorId)?.name;
+  if (!name) return [];
+  return (bundle.bundle ?? []).flatMap((b) => {
+    const product = all.find((x) => x.id === b.productId);
+    const color = product?.colors.find((c) => colorKey(c.name) === colorKey(name));
+    return product && color ? [{ productId: product.id, colorId: color.id, qty: b.qty, name: product.name }] : [];
+  });
+}
+
+/** "Set of 2" for a pair of one product, otherwise "Set". */
+export const bundleLabel = (p: Product) =>
+  p.bundle?.length === 1 && p.bundle[0].qty > 1 ? `Set of ${p.bundle[0].qty}` : "Set";
 
 export const slugify = (s: string) =>
   s

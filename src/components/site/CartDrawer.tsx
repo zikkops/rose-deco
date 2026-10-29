@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { Clock, Minus, Plus, X } from "lucide-react";
 import { SmartImage } from "@/components/SmartImage";
-import { MADE_TO_ORDER_LEAD, formatPrice } from "@/lib/catalog";
+import { MADE_TO_ORDER_LEAD, colorImage, formatPrice } from "@/lib/catalog";
 import { setCartOpen, setCartQty, useCartDetails, useCartOpen } from "@/lib/store";
 
 export function CartDrawer() {
@@ -41,7 +41,7 @@ export function CartDrawer() {
               {items.map((i) => (
                 <li key={i.productId + i.colorId} className="flex gap-4 py-5">
                   <Link href={`/product/${i.product.slug}`} onClick={() => setCartOpen(false)} className="relative size-24 shrink-0 overflow-hidden bg-linen">
-                    <SmartImage src={i.product.images[0]} alt="" fill sizes="96px" className="object-cover" />
+                    <SmartImage src={colorImage(i.product, i.color)} alt="" fill sizes="96px" className="object-cover" />
                   </Link>
                   <div className="min-w-0 flex-1">
                     <div className="flex justify-between gap-3">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Check, Clock } from "lucide-react";
 import { SmartImage } from "@/components/SmartImage";
-import { MADE_TO_ORDER_LEAD, formatPrice } from "@/lib/catalog";
+import { MADE_TO_ORDER_LEAD, colorImage, formatPrice } from "@/lib/catalog";
 import { placeOrder, useCartDetails, useProductsState, type Order } from "@/lib/store";
 
 export function Checkout() {
@@ -89,7 +89,7 @@ export function Checkout() {
             {items.map((i) => (
               <li key={i.productId + i.colorId} className="flex gap-4 py-4">
                 <div className="relative size-16 shrink-0 overflow-hidden bg-linen">
-                  <SmartImage src={i.product.images[0]} alt="" fill sizes="64px" className="object-cover" />
+                  <SmartImage src={colorImage(i.product, i.color)} alt="" fill sizes="64px" className="object-cover" />
                 </div>
                 <div className="min-w-0 flex-1 text-sm">
                   <div className="flex justify-between gap-2">
